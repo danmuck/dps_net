@@ -11,15 +11,17 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: go run main.go <bind_ip:port>")
+		fmt.Println("Usage: go run main.go <port>")
 		return
 	}
+	ip := dht.GetOutboundIP()
+	addr := ip + ":" + os.Args[1]
 
-	node := dht.NewNode(os.Args[1])
-	err := node.Conn.Listen()
-	if err != nil {
-		panic(err)
-	}
+	node := dht.NewNode(addr)
+	// err := node.Conn.Listen()
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	fmt.Println("Node ID:", hex.EncodeToString(node.ID[:]))
 	fmt.Println("Listening on:", node.Addr)
@@ -34,6 +36,13 @@ func main() {
 			continue
 		}
 		switch args[0] {
+		case "bootstrap":
+			if len(args) < 2 {
+				fmt.Println("Usage: bootstrap <ip:port>")
+				continue
+			}
+			node.Bootstrap(args[1])
+
 		case "ping":
 			if len(args) < 2 {
 				fmt.Println("Usage: ping <ip:port>")

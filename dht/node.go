@@ -1,6 +1,7 @@
 package dht
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -29,9 +30,28 @@ func NewNode(address string) *Node {
 		Store:    make(map[string][]byte),
 		LastSeen: time.Now(),
 	}
+	node.Info.LastSeen = node.LastSeen
 	node.Conn = NewConnManager(node)
 
+	err := node.Conn.Listen()
+	if err != nil {
+		panic(err)
+	}
+
 	return node
+}
+
+func (n *Node) Bootstrap(bootstrapAddr string) {
+	msg := Message{
+		Type: Ping,
+		From: Contact{ID: n.ID, Address: n.Addr},
+	}
+	err := n.Conn.SendMessage(bootstrapAddr, msg)
+	if err != nil {
+		LogRPCFailure("Bootstrap ping failed: " + err.Error())
+	} else {
+		fmt.Println("Bootstrap ping sent to", bootstrapAddr)
+	}
 }
 
 func (n *Node) Ping(remoteAddr string) bool {

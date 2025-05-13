@@ -2,17 +2,19 @@ package dht
 
 import (
 	"fmt"
+	"sort"
 	"sync"
+	"time"
 )
 
 const BucketSize = 20
 
 type Contact struct {
-	ID      NodeID
-	Address string
+	ID       NodeID
+	Address  string
+	LastSeen time.Time // used for eviction
 }
 
-// kBucket represents a dynamic XOR distance range
 type kBucket struct {
 	Start NodeID
 	End   NodeID
@@ -28,6 +30,9 @@ type RoutingTable struct {
 	mu      sync.Mutex
 }
 
+// Initialize a new routing table for the [local] node
+//
+//	Caller: node.go/NewNode()
 func NewRoutingTable(local Contact, k int) *RoutingTable {
 	min := NodeID{}
 	max := MaxNodeID()
@@ -41,6 +46,11 @@ func NewRoutingTable(local Contact, k int) *RoutingTable {
 	return rt
 }
 
+// Add new contact into the current bucket,
+//
+//	handle splitting buckets as necessary
+//
+//	Caller: connection.go/handleMessage()
 func (rt *RoutingTable) AddContact(contact Contact) {
 	// distance := xorDistance(rt.id, contact.ID)
 	bucket := rt.FindBucket(contact.ID)
@@ -51,9 +61,12 @@ func (rt *RoutingTable) AddContact(contact Contact) {
 	// Already present?
 	for _, n := range bucket.Nodes {
 		if n.ID == contact.ID {
+			// Update last seen
+			n.LastSeen = time.Now()
 			return
 		}
 	}
+	contact.LastSeen = time.Now()
 
 	if len(bucket.Nodes) < BucketSize {
 		bucket.Nodes = append(bucket.Nodes, contact)
@@ -131,4 +144,50 @@ func CompareNodeIDs(a, b NodeID) int {
 		}
 	}
 	return 0
+}
+
+// =========================
+// Bucket Debug Utility
+// =========================
+func (rt *RoutingTable) PrintBuckets() {
+	fmt.Printf("Routing Table (%d buckets):\n", rt.size)
+	for i, b := range rt.Buckets {
+		fmt.Printf("  Bucket %2d [%x - %x) — %d nodes\n",
+			i, b.Start[:4], b.End[:4], len(b.Nodes))
+		for _, n := range b.Nodes {
+			fmt.Printf("    - %x @ %s\n", n.ID[:4], n.Address)
+		}
+	}
+}
+
+// =========================
+// Closest Node Finder
+// =========================
+func (rt *RoutingTable) FindClosest(target NodeID, count int) []Contact {
+	var all []Contact
+	for _, bucket := range rt.Buckets {
+		bucket.mu.Lock()
+		all = append(all, bucket.Nodes...)
+		bucket.mu.Unlock()
+	}
+	type nodeDist struct {
+		Contact  Contact
+		Distance [20]byte
+	}
+	var scored []nodeDist
+	for _, n := range all {
+		scored = append(scored, nodeDist{
+			Contact:  n,
+			Distance: xorDistance(target, n.ID),
+		})
+	}
+	sort.Slice(scored, func(i, j int) bool {
+		return CompareNodeIDs(scored[i].Distance, scored[j].Distance) < 0
+	})
+
+	var closest []Contact
+	for i := 0; i < len(scored) && i < count; i++ {
+		closest = append(closest, scored[i].Contact)
+	}
+	return closest
 }

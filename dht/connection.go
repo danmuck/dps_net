@@ -13,10 +13,23 @@ type ConnManager struct {
 	Node      *Node
 }
 
+// Initialize new connection manager for a starting node
+//
+//	Caller: node.go/NewNode()
 func NewConnManager(node *Node) *ConnManager {
-	return &ConnManager{LocalAddr: node.Addr, NodeID: node.ID, Node: node}
+	return &ConnManager{
+		LocalAddr: node.Addr,
+		NodeID:    node.ID,
+		Node:      node,
+	}
 }
 
+// Send a provided message to [target]
+//
+//	Handles establishing and writing to UDP
+//	Updates the [msg.From] so that it contains the proper node listening address
+//
+//	Caller: anything that sends messages ie. client
 func (cm *ConnManager) SendMessage(target string, msg Message) error {
 	udpAddr, err := net.ResolveUDPAddr("udp", target)
 	if err != nil {
@@ -45,6 +58,9 @@ func (cm *ConnManager) SendMessage(target string, msg Message) error {
 	return nil
 }
 
+// Begin listening on the [ConnManager.LocalAddr]
+//
+//	Caller: node.go/NewNode()
 func (cm *ConnManager) Listen() error {
 	addr, err := net.ResolveUDPAddr("udp", cm.LocalAddr)
 	if err != nil {
@@ -61,6 +77,11 @@ func (cm *ConnManager) Listen() error {
 	return nil
 }
 
+// Handle the UDP connection
+//
+//	Passes recieved messages to [handleMessage]
+//
+//	Caller: connection.go/Listen()
 func (cm *ConnManager) handleIncomingMessages(conn *net.UDPConn) {
 	buf := make([]byte, 2048)
 	for {
@@ -82,6 +103,9 @@ func (cm *ConnManager) handleIncomingMessages(conn *net.UDPConn) {
 	}
 }
 
+// Handle receiving of RPCs as per Kademlia
+//
+//	Caller: connection.go/handleIncomingMessages()
 func (cm *ConnManager) handleMessage(msg Message) {
 
 	switch msg.Type {

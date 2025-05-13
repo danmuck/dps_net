@@ -1,6 +1,9 @@
 package dht
 
-import "crypto/rand"
+import (
+	"crypto/rand"
+	"net"
+)
 
 func bucketIndex(a, b NodeID) int {
 	for i := range len(a) {
@@ -40,4 +43,16 @@ func MaxNodeID() NodeID {
 		max[i] = 0xFF
 	}
 	return max
+}
+
+// GetOutboundIP detects a usable LAN IP for advertising this node
+func GetOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return "127.0.0.1"
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	return localAddr.IP.String()
 }

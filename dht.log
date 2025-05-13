@@ -11,3 +11,39 @@
 [17:15:54.143] RECV PONG -> 127.0.0.1:49380 []
 {"from":"127.0.0.1:9002","key":"","phase":"received","results":0,"timestamp":"17:15:54.143","type":"PONG"}
 [ROUTING] Total known peers: 2
+[17:32:57.212] SEND PING -> 127.0.0.1:9001 []
+[METRICS] Sent: 1, Recv: 0, Fail: 0
+{"from":"127.0.0.1:9002","key":"","phase":"sent","results":0,"timestamp":"17:32:57.214","type":"PING"}
+[17:32:57.214] RECV PING -> 127.0.0.1:50349 []
+[METRICS] Sent: 0, Recv: 1, Fail: 0
+{"from":"127.0.0.1:9002","key":"","phase":"received","results":0,"timestamp":"17:32:57.214","type":"PING"}
+[17:32:57.214] SEND PONG -> 127.0.0.1:9002 []
+{"from":"127.0.0.1:9001","key":"","phase":"sent","results":0,"timestamp":"17:32:57.214","type":"PONG"}
+[ROUTING] Total known peers: 2
+[17:32:57.214] RECV PONG -> 127.0.0.1:52648 []
+{"from":"127.0.0.1:9001","key":"","phase":"received","results":0,"timestamp":"17:32:57.214","type":"PONG"}
+[ROUTING] Total known peers: 2
+[17:39:54.656] SEND PING -> 10.84.101.176:9002 []
+[METRICS] Sent: 1, Recv: 0, Fail: 0
+{"from":"10.84.101.176:9001","key":"","phase":"sent","results":0,"timestamp":"17:39:54.657","type":"PING"}
+[17:39:57.215] RECV PING -> 10.84.101.176:57408 []
+[METRICS] Sent: 0, Recv: 1, Fail: 0
+{"from":"10.84.101.176:9001","key":"","phase":"received","results":0,"timestamp":"17:39:57.215","type":"PING"}
+[17:39:57.215] SEND PONG -> 10.84.101.176:9001 []
+{"from":"10.84.101.176:9002","key":"","phase":"sent","results":0,"timestamp":"17:39:57.215","type":"PONG"}
+[ROUTING] Total known peers: 2
+[17:39:57.223] RECV PONG -> 10.84.101.176:54020 []
+{"from":"10.84.101.176:9002","key":"","phase":"received","results":0,"timestamp":"17:39:57.223","type":"PONG"}
+[ROUTING] Total known peers: 2
+[17:57:09.258] SEND PING -> 10.84.101.176:9002 []
+[METRICS] Sent: 1, Recv: 0, Fail: 0
+{"from":"10.84.101.176:9001","key":"","phase":"sent","results":0,"timestamp":"17:57:09.260","type":"PING"}
+[17:57:10.955] RECV PING -> 10.84.101.176:50479 []
+[METRICS] Sent: 0, Recv: 1, Fail: 0
+{"from":"10.84.101.176:9001","key":"","phase":"received","results":0,"timestamp":"17:57:10.955","type":"PING"}
+[17:57:10.956] SEND PONG -> 10.84.101.176:9001 []
+{"from":"10.84.101.176:9002","key":"","phase":"sent","results":0,"timestamp":"17:57:10.956","type":"PONG"}
+[ROUTING] Total known peers: 2
+[17:57:10.968] RECV PONG -> 10.84.101.176:58359 []
+{"from":"10.84.101.176:9002","key":"","phase":"received","results":0,"timestamp":"17:57:10.968","type":"PONG"}
+[ROUTING] Total known peers: 2
