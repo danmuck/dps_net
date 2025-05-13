@@ -47,3 +47,13 @@
 [17:57:10.968] RECV PONG -> 10.84.101.176:58359 []
 {"from":"10.84.101.176:9002","key":"","phase":"received","results":0,"timestamp":"17:57:10.968","type":"PONG"}
 [ROUTING] Total known peers: 2
+[18:04:02.542] SEND PING -> 10.84.101.176:9002 []
+{"from":"10.84.101.176:9001","key":"","phase":"sent","results":0,"timestamp":"18:04:02.543","type":"PING"}
+[18:04:03.995] RECV PING -> 10.84.101.176:60831 []
+{"from":"10.84.101.176:9001","key":"","phase":"received","results":0,"timestamp":"18:04:03.995","type":"PING"}
+[18:04:03.996] SEND PONG -> 10.84.101.176:9001 []
+{"from":"10.84.101.176:9002","key":"","phase":"sent","results":0,"timestamp":"18:04:03.996","type":"PONG"}
+[ROUTING] Total known peers: 2
+[18:04:04.019] RECV PONG -> 10.84.101.176:51699 []
+{"from":"10.84.101.176:9002","key":"","phase":"received","results":0,"timestamp":"18:04:04.019","type":"PONG"}
+[ROUTING] Total known peers: 2

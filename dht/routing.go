@@ -33,6 +33,8 @@ type RoutingTable struct {
 // Initialize a new routing table for the [local] node
 //
 //	Caller: node.go/NewNode()
+//
+// //
 func NewRoutingTable(local Contact, k int) *RoutingTable {
 	min := NodeID{}
 	max := MaxNodeID()
@@ -51,6 +53,8 @@ func NewRoutingTable(local Contact, k int) *RoutingTable {
 //	handle splitting buckets as necessary
 //
 //	Caller: connection.go/handleMessage()
+//
+// //
 func (rt *RoutingTable) AddContact(contact Contact) {
 	// distance := xorDistance(rt.id, contact.ID)
 	bucket := rt.FindBucket(contact.ID)

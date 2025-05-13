@@ -9,19 +9,20 @@ import (
 	"strings"
 )
 
+func wrapPort(port string) string {
+	ip := dht.GetOutboundIP()
+	return ip + ":" + port
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: go run main.go <port>")
 		return
 	}
-	ip := dht.GetOutboundIP()
-	addr := ip + ":" + os.Args[1]
+
+	addr := wrapPort(os.Args[1])
 
 	node := dht.NewNode(addr)
-	// err := node.Conn.Listen()
-	// if err != nil {
-	// 	panic(err)
-	// }
 
 	fmt.Println("Node ID:", hex.EncodeToString(node.ID[:]))
 	fmt.Println("Listening on:", node.Addr)
@@ -38,17 +39,17 @@ func main() {
 		switch args[0] {
 		case "bootstrap":
 			if len(args) < 2 {
-				fmt.Println("Usage: bootstrap <ip:port>")
+				fmt.Println("Usage: bootstrap <port>")
 				continue
 			}
-			node.Bootstrap(args[1])
+			node.Bootstrap(wrapPort(args[1]))
 
 		case "ping":
 			if len(args) < 2 {
-				fmt.Println("Usage: ping <ip:port>")
+				fmt.Println("Usage: ping <port>")
 				continue
 			}
-			target := args[1]
+			target := wrapPort(args[1])
 			msg := dht.Message{
 				Type: dht.Ping,
 				From: node.Info,
@@ -57,10 +58,10 @@ func main() {
 			// node.SendMessageTo(target, msg)
 		case "store":
 			if len(args) < 4 {
-				fmt.Println("Usage: store <ip:port> <key> <value>")
+				fmt.Println("Usage: store <port> <key> <value>")
 				continue
 			}
-			target := args[1]
+			target := wrapPort(args[1])
 			msg := dht.Message{
 				Type:  dht.Store,
 				From:  node.Info,
@@ -71,10 +72,10 @@ func main() {
 
 		case "lookup":
 			if len(args) < 3 {
-				fmt.Println("Usage: lookup <ip:port> <key>")
+				fmt.Println("Usage: lookup <port> <key>")
 				continue
 			}
-			target := args[1]
+			target := wrapPort(args[1])
 			msg := dht.Message{
 				Type: dht.FindValue,
 				From: node.Info,
