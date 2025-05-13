@@ -1,7 +1,6 @@
 package dht
 
 import (
-	"crypto/rand"
 	"sync"
 	"time"
 )
@@ -21,22 +20,18 @@ type Node struct {
 
 func NewNode(address string) *Node {
 	id := GenerateRandomID()
+	contact := Contact{ID: id, Address: address}
 	node := &Node{
 		ID:       id,
 		Addr:     address,
-		Routing:  NewRoutingTable(id),
-		Info:     Contact{ID: id, Address: address},
+		Info:     contact,
+		Routing:  NewRoutingTable(contact, 10),
 		Store:    make(map[string][]byte),
 		LastSeen: time.Now(),
 	}
 	node.Conn = NewConnManager(node)
-	return node
-}
 
-func GenerateRandomID() NodeID {
-	var id NodeID
-	rand.Read(id[:])
-	return id
+	return node
 }
 
 func (n *Node) Ping(remoteAddr string) bool {

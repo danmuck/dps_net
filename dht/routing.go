@@ -1,7 +1,7 @@
 package dht
 
 import (
-	"sort"
+	"fmt"
 	"sync"
 )
 
@@ -12,44 +12,43 @@ type Contact struct {
 	Address string
 }
 
-type KBucket struct {
+// kBucket represents a dynamic XOR distance range
+type kBucket struct {
+	Start NodeID
+	End   NodeID
 	Nodes []Contact
 	mu    sync.Mutex
 }
 
 type RoutingTable struct {
-	SelfID  NodeID
-	Buckets [160]*KBucket
+	id      NodeID
+	k       int
+	size    int
+	Buckets []*kBucket
+	mu      sync.Mutex
 }
 
-func NewRoutingTable(selfID NodeID) *RoutingTable {
-	rt := &RoutingTable{SelfID: selfID}
-	for i := range 160 {
-		rt.Buckets[i] = &KBucket{}
+func NewRoutingTable(local Contact, k int) *RoutingTable {
+	min := NodeID{}
+	max := MaxNodeID()
+	rt := &RoutingTable{
+		id:      local.ID,
+		k:       k,
+		size:    1,
+		Buckets: []*kBucket{{Start: min, End: max}},
 	}
+	rt.AddContact(local)
 	return rt
 }
 
-func bucketIndex(a, b NodeID) int {
-	for i := range len(a) {
-		x := a[i] ^ b[i]
-		if x != 0 {
-			for j := range 8 {
-				if x&(0x80>>j) != 0 {
-					return i*8 + j
-				}
-			}
-		}
-	}
-	return 159
-}
-
 func (rt *RoutingTable) AddContact(contact Contact) {
-	idx := bucketIndex(rt.SelfID, contact.ID)
-	bucket := rt.Buckets[idx]
+	// distance := xorDistance(rt.id, contact.ID)
+	bucket := rt.FindBucket(contact.ID)
 	bucket.mu.Lock()
 	defer bucket.mu.Unlock()
+	fmt.Printf("Trying to add %x to bucket [%x–%x)\n", contact.ID[:4], bucket.Start[:4], bucket.End[:4])
 
+	// Already present?
 	for _, n := range bucket.Nodes {
 		if n.ID == contact.ID {
 			return
@@ -58,45 +57,78 @@ func (rt *RoutingTable) AddContact(contact Contact) {
 
 	if len(bucket.Nodes) < BucketSize {
 		bucket.Nodes = append(bucket.Nodes, contact)
-		LogRoutingTableSize(rt)
+		return
+	}
+
+	// Bucket full: decide whether to split
+	if rt.bucketContainsSelf(bucket) {
+		rt.splitBucket(bucket)
+		rt.AddContact(contact) // Retry
 	} else {
-		// Optional: ping and evict logic here
+		// Eviction/ping check placeholder
 	}
 }
 
-func xorDistance(a, b NodeID) [20]byte {
-	var dist [20]byte
-	for i := range 20 {
-		dist[i] = a[i] ^ b[i]
-	}
-	return dist
+func (rt *RoutingTable) bucketContainsSelf(bucket *kBucket) bool {
+	return NodeInRange(rt.id, bucket.Start, bucket.End)
 }
 
-type contactDistance struct {
-	Contact  Contact
-	Distance [20]byte
-}
+func (rt *RoutingTable) splitBucket(bucket *kBucket) {
+	rt.mu.Lock()
+	defer rt.mu.Unlock()
+	mid := prefixMidpoint(bucket.Start, bucket.End)
 
-func (rt *RoutingTable) FindClosest(target NodeID, count int) []Contact {
-	var all []contactDistance
-	for _, bucket := range rt.Buckets {
-		bucket.mu.Lock()
-		for _, n := range bucket.Nodes {
-			all = append(all, contactDistance{
-				Contact:  n,
-				Distance: xorDistance(target, n.ID),
-			})
+	left := &kBucket{Start: bucket.Start, End: mid}
+	right := &kBucket{Start: mid, End: bucket.End}
+
+	for _, n := range bucket.Nodes {
+		if NodeInRange(n.ID, left.Start, left.End) {
+			left.Nodes = append(left.Nodes, n)
+		} else {
+			right.Nodes = append(right.Nodes, n)
 		}
-		bucket.mu.Unlock()
 	}
 
-	sort.Slice(all, func(i, j int) bool {
-		return string(all[i].Distance[:]) < string(all[j].Distance[:])
-	})
-
-	var closest []Contact
-	for i := 0; i < len(all) && i < count; i++ {
-		closest = append(closest, all[i].Contact)
+	// Replace in place
+	for i, b := range rt.Buckets {
+		if b == bucket {
+			rt.Buckets = append(rt.Buckets[:i], append([]*kBucket{left, right}, rt.Buckets[i+1:]...)...)
+			break
+		}
 	}
-	return closest
+	rt.size = len(rt.Buckets)
+}
+
+func (rt *RoutingTable) FindBucket(id NodeID) *kBucket {
+	for _, b := range rt.Buckets {
+		if NodeInRange(id, b.Start, b.End) {
+			return b
+		}
+	}
+	return rt.Buckets[len(rt.Buckets)-1] // fallback
+}
+
+func prefixMidpoint(start, end NodeID) NodeID {
+	var mid NodeID
+	carry := 0
+	for i := len(start) - 1; i >= 0; i-- {
+		s := int(start[i])
+		e := int(end[i])
+		sum := s + e + carry
+		mid[i] = byte(sum / 2)
+		carry = (s + e + carry) % 2 * 256
+	}
+	return mid
+}
+
+// CompareNodeIDs returns -1, 0, or 1 for a < b, a == b, a > b
+func CompareNodeIDs(a, b NodeID) int {
+	for i := range len(a) {
+		if a[i] < b[i] {
+			return -1
+		} else if a[i] > b[i] {
+			return 1
+		}
+	}
+	return 0
 }

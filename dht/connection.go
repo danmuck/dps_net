@@ -97,8 +97,8 @@ func (cm *ConnManager) handleMessage(msg Message) {
 		cm.Node.StoreValue(msg.Key, msg.Value)
 
 	case FindNode:
-		closest := cm.Node.Routing.FindClosest(msg.Target, BucketSize)
-		reply := Message{Type: FoundNode, From: cm.Node.Info, Results: closest}
+		closest := cm.Node.Routing.FindBucket(msg.Target)
+		reply := Message{Type: FoundNode, From: cm.Node.Info, Results: closest.Nodes}
 		cm.SendMessage(msg.From.Address, reply)
 
 	case FindValue:
