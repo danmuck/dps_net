@@ -86,10 +86,22 @@ func (rt *RoutingTable) AddContact(contact Contact) {
 	}
 }
 
+// Check if a bucket contains the local node
+//
+//	used when deciding to split buckets
+//
+//	Caller: routing.go/AddContact()
+//
+// //
 func (rt *RoutingTable) bucketContainsSelf(bucket *kBucket) bool {
 	return NodeInRange(rt.id, bucket.Start, bucket.End)
 }
 
+// Handle logic for splitting buckets
+//
+//	Caller: routing.go/AddContact()
+//
+// //
 func (rt *RoutingTable) splitBucket(bucket *kBucket) {
 	rt.mu.Lock()
 	defer rt.mu.Unlock()
@@ -116,6 +128,13 @@ func (rt *RoutingTable) splitBucket(bucket *kBucket) {
 	rt.size = len(rt.Buckets)
 }
 
+// Find the closest bucket that operates over the range containing
+//
+//	the given [NodeID]
+//
+//	Caller: routing.go/AddContact()
+//
+// //
 func (rt *RoutingTable) FindBucket(id NodeID) *kBucket {
 	for _, b := range rt.Buckets {
 		if NodeInRange(id, b.Start, b.End) {
@@ -125,6 +144,11 @@ func (rt *RoutingTable) FindBucket(id NodeID) *kBucket {
 	return rt.Buckets[len(rt.Buckets)-1] // fallback
 }
 
+// Find the middle of an ID range
+//
+//	Caller: routing.go/splitBucket()
+//
+// //
 func prefixMidpoint(start, end NodeID) NodeID {
 	var mid NodeID
 	carry := 0
@@ -138,7 +162,14 @@ func prefixMidpoint(start, end NodeID) NodeID {
 	return mid
 }
 
-// CompareNodeIDs returns -1, 0, or 1 for a < b, a == b, a > b
+// CompareNodeIDs
+//
+//	returns:
+//		-1 	-> 	a < b
+//		0  	-> 	a ==b
+//		1 	->	a > b
+//
+// //
 func CompareNodeIDs(a, b NodeID) int {
 	for i := range len(a) {
 		if a[i] < b[i] {
@@ -150,9 +181,13 @@ func CompareNodeIDs(a, b NodeID) int {
 	return 0
 }
 
-// =========================
-// Bucket Debug Utility
-// =========================
+// Find the closest bucket that operates over the range containing
+//
+//	the given [NodeID]
+//
+//	Caller: multiple
+//
+// //
 func (rt *RoutingTable) PrintBuckets() {
 	fmt.Printf("Routing Table (%d buckets):\n", rt.size)
 	for i, b := range rt.Buckets {
@@ -164,9 +199,11 @@ func (rt *RoutingTable) PrintBuckets() {
 	}
 }
 
-// =========================
-// Closest Node Finder
-// =========================
+// Find the K closest nodes to a given [NodeID]
+//
+//	Caller: multiple
+//
+// //
 func (rt *RoutingTable) FindClosest(target NodeID, count int) []Contact {
 	var all []Contact
 	for _, bucket := range rt.Buckets {

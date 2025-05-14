@@ -57,3 +57,32 @@
 [18:04:04.019] RECV PONG -> 10.84.101.176:51699 []
 {"from":"10.84.101.176:9002","key":"","phase":"received","results":0,"timestamp":"18:04:04.019","type":"PONG"}
 [ROUTING] Total known peers: 2
+[19:03:10.171] SEND PING -> 10.84.101.176:9002 []
+{"from":"10.84.101.176:9001","key":"","phase":"sent","results":0,"timestamp":"19:03:10.172","type":"PING"}
+[19:03:11.856] RECV PING -> 10.84.101.176:51278 []
+{"from":"10.84.101.176:9001","key":"","phase":"received","results":0,"timestamp":"19:03:11.856","type":"PING"}
+[19:03:11.856] SEND PONG -> 10.84.101.176:9001 []
+{"from":"10.84.101.176:9002","key":"","phase":"sent","results":0,"timestamp":"19:03:11.856","type":"PONG"}
+[ROUTING] Total known peers: 2
+[19:03:11.877] RECV PONG -> 10.84.101.176:65437 []
+{"from":"10.84.101.176:9002","key":"","phase":"received","results":0,"timestamp":"19:03:11.877","type":"PONG"}
+[ROUTING] Total known peers: 2
+[19:03:19.564] SEND STORE -> 10.84.101.176:9002 [mykey]
+[METRICS] Sent: 2, Recv: 1, Fail: 0
+{"from":"10.84.101.176:9001","key":"mykey","phase":"sent","results":0,"timestamp":"19:03:19.565","type":"STORE"}
+[19:03:19.570] RECV STORE -> 10.84.101.176:54871 [mykey]
+[METRICS] Sent: 1, Recv: 2, Fail: 0
+{"from":"10.84.101.176:9001","key":"mykey","phase":"received","results":0,"timestamp":"19:03:19.570","type":"STORE"}
+[ROUTING] Total known peers: 2
+[19:03:53.393] SEND FIND_VALUE -> 10.84.101.176:9002 [mykey]
+[METRICS] Sent: 3, Recv: 1, Fail: 0
+{"from":"10.84.101.176:9001","key":"mykey","phase":"sent","results":0,"timestamp":"19:03:53.393","type":"FIND_VALUE"}
+[19:03:53.401] RECV FIND_VALUE -> 10.84.101.176:60999 [mykey]
+[METRICS] Sent: 1, Recv: 3, Fail: 0
+{"from":"10.84.101.176:9001","key":"mykey","phase":"received","results":0,"timestamp":"19:03:53.402","type":"FIND_VALUE"}
+[19:03:53.402] SEND FOUND_VALUE -> 10.84.101.176:9001 [mykey]
+{"from":"10.84.101.176:9002","key":"mykey","phase":"sent","results":0,"timestamp":"19:03:53.402","type":"FOUND_VALUE"}
+[ROUTING] Total known peers: 2
+[19:03:53.408] RECV FOUND_VALUE -> 10.84.101.176:63521 [mykey]
+{"from":"10.84.101.176:9002","key":"mykey","phase":"received","results":0,"timestamp":"19:03:53.409","type":"FOUND_VALUE"}
+[ROUTING] Total known peers: 2

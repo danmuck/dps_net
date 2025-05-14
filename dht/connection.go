@@ -136,7 +136,7 @@ func (cm *ConnManager) handleMessage(msg Message) {
 		cm.SendMessage(msg.From.Address, reply)
 
 	case FindValue:
-		if val, ok := cm.Node.Lookup(msg.Key); ok {
+		if val, ok := cm.Node.LookupKey(msg.Key); ok {
 			reply := Message{Type: FoundValue, From: cm.Node.Info, Key: msg.Key, Value: val}
 			cm.SendMessage(msg.From.Address, reply)
 		}

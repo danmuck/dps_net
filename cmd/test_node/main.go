@@ -23,6 +23,7 @@ func main() {
 	addr := wrapPort(os.Args[1])
 
 	node := dht.NewNode(addr)
+	// node.StartPeerDiscovery()
 
 	fmt.Println("Node ID:", hex.EncodeToString(node.ID[:]))
 	fmt.Println("Listening on:", node.Addr)

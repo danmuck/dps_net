@@ -55,8 +55,8 @@ func (n *Node) Bootstrap(bootstrapAddr string) {
 }
 
 func (n *Node) Ping(remoteAddr string) bool {
-	// Stub for sending PING message
 
+	// n.Conn.SendMessage(remoteAddr, n.PingM(remoteAddr))
 	return true
 }
 
@@ -66,14 +66,20 @@ func (n *Node) StoreValue(key string, value []byte) {
 	n.Store[key] = value
 }
 
-func (n *Node) FindNode(target NodeID) []string {
+func (n *Node) FindNode(target NodeID) []Contact {
 	// Stub: Return closest nodes to target ID
-	return []string{}
+	contacts := n.Routing.FindClosest(target, n.Routing.k)
+	return contacts
 }
 
-func (n *Node) Lookup(key string) ([]byte, bool) {
+func (n *Node) Lookup(target NodeID) []Contact {
+	return n.Routing.FindClosest(target, BucketSize)
+}
+
+func (n *Node) LookupKey(key string) ([]byte, bool) {
 	n.Mutex.RLock()
 	defer n.Mutex.RUnlock()
+
 	val, ok := n.Store[key]
 	return val, ok
 }

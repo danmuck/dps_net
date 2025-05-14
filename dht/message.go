@@ -36,3 +36,50 @@ func (n *Node) PongM(target NodeID) Message {
 		Target: target,
 	}
 }
+
+func (n *Node) StoreM(target NodeID, key string, value []byte) Message {
+	return Message{
+		Type:   Store,
+		From:   n.Info,
+		Target: target,
+		Key:    key,
+		Value:  value,
+	}
+}
+
+func (n *Node) FindNodeM(target NodeID) Message {
+	return Message{
+		Type:   FindNode,
+		From:   n.Info,
+		Target: target,
+	}
+}
+
+func (n *Node) FoundNodeM(target NodeID, results []Contact) Message {
+	return Message{
+		Type:    FoundNode,
+		From:    n.Info,
+		Target:  target,
+		Results: results,
+	}
+}
+
+func (n *Node) FindValueM(target NodeID, key string) Message {
+	return Message{
+		Type:   FindValue,
+		From:   n.Info,
+		Target: target,
+		Key:    key,
+	}
+}
+
+func (n *Node) FoundValueM(target NodeID, key string, value []byte, results []Contact) Message {
+	return Message{
+		Type:    FoundValue,
+		From:    n.Info,
+		Target:  target,
+		Key:     key,
+		Value:   value,
+		Results: results,
+	}
+}
