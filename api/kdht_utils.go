@@ -96,29 +96,64 @@ func GenerateRandomNodeID() NodeID {
 // ////
 // XorDistance calculates the XOR distance between two NodeIDs
 // //
-func XorDistance(a, b NodeID) NodeID {
+func XorDistance(local, other NodeID) NodeID {
 	var dist NodeID
 	for i := range KeyBytes {
-		dist[i] = a[i] ^ b[i]
+		dist[i] = local[i] ^ other[i]
 	}
 	return dist
 }
 
 // ////
+// LessDistance returns true if distance a < distance b
+// //
+func LessDistance(a, b NodeID) bool {
+	for i := range a {
+		if a[i] < b[i] {
+			return true
+		} else if a[i] > b[i] {
+			return false
+		}
+	}
+	return false
+}
+
+// ////
 // KBucketIndex calculates the natural bucket index for a given NodeID
+// Index is the index of the bucket in the bucket array
+// Depth is the number of bits share with the local node
 // //
 func KBucketIndex(local, other NodeID) int {
+	maxDepth := KeyBits - 1
 	for i := range KeyBytes {
 		x := local[i] ^ other[i]
 		if x != 0 {
 			for j := range 8 {
 				if x&(0x80>>j) != 0 {
-					return (KeyBits - 1) - (i*8 + j)
+					return (i*8 + j)
 				}
 			}
 		}
 	}
-	return 0
+	return maxDepth
+}
+
+// ////
+// SharedPrefixLength calculates the depth ie. the shared prefix length
+// //
+func SharedPrefixLength(local, other NodeID) int {
+	for i := range KeyBytes {
+		x := local[i] ^ other[i]
+		if x != 0 {
+			for j := range 8 {
+				if x&(0x80>>j) != 0 {
+					return (i*8 + j)
+				}
+			}
+		}
+	}
+	return KeyBits
+	// return maxDepth - KBucketIndex(local, other)
 }
 
 // ////
