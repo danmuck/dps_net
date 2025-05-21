@@ -14,28 +14,29 @@ type dummyNode struct{ id api.NodeID }
 
 func (d dummyNode) ID() api.NodeID                                       { return d.id }
 func (d dummyNode) Address() string                                      { return "" }
-func (d dummyNode) Contact() api.Contact                                 { return fakeContact{id: d.id, seen: time.Now()} }
+func (d dummyNode) Contact() api.ContactInterface                        { return testContact{id: d.id, seen: time.Now()} }
 func (d dummyNode) Join(ctx context.Context, bootstrapAddr string) error { return nil }
 func (d dummyNode) StoreValue(ctx context.Context, key api.NodeID, value []byte) error {
 	return nil
 }
-func (d dummyNode) FindValue(ctx context.Context, key api.NodeID) ([]byte, []api.Contact, error) {
+func (d dummyNode) FindValue(ctx context.Context, key api.NodeID) ([]byte, []api.ContactInterface, error) {
 	return nil, nil, nil
 }
-func (d dummyNode) FindNode(ctx context.Context, key api.NodeID, count int) ([]api.Contact, error) {
+func (d dummyNode) FindNode(ctx context.Context, key api.NodeID, count int) ([]api.ContactInterface, error) {
 	return nil, nil
 }
 func (d dummyNode) Shutdown(ctx context.Context) error { return nil }
 
-// fakeContact implements api.Contact
-type fakeContact struct {
+// testContact implements api.Contact
+type testContact struct {
 	id   api.NodeID
 	seen time.Time
 }
 
-func (f fakeContact) ID() api.NodeID      { return f.id }
-func (f fakeContact) Address() string     { return "" }
-func (f fakeContact) LastSeen() time.Time { return f.seen }
+func (f testContact) ID() api.NodeID      { return f.id }
+func (f testContact) Address() string     { return "" }
+func (f testContact) LastSeen() time.Time { return f.seen }
+func (f testContact) UpdateLastSeen()     { f.seen = time.Now() }
 
 // newNodeID makes a NodeID whose last byte is v (all other bytes zero).
 func newNodeID(v byte) api.NodeID {
@@ -49,9 +50,9 @@ func TestKBucket_InsertNew(t *testing.T) {
 	rt := &RoutingTable{local: local, k: 2, buckets: make([]*kBucket, 0)}
 	b := newBucket(rt, 0)
 
-	c1 := fakeContact{id: newNodeID(1), seen: time.Now()}
-	c2 := fakeContact{id: newNodeID(2), seen: time.Now()}
-	c3 := fakeContact{id: newNodeID(3), seen: time.Now()}
+	c1 := testContact{id: newNodeID(1), seen: time.Now()}
+	c2 := testContact{id: newNodeID(2), seen: time.Now()}
+	c3 := testContact{id: newNodeID(3), seen: time.Now()}
 
 	t.Run("first insert", func(t *testing.T) {
 		b.Insert(c2)
@@ -105,9 +106,9 @@ func TestKBucket_Insert(t *testing.T) {
 	b := newBucket(rt, 0)
 
 	// Contacts at distances 1,2,3 (last‐byte values)
-	c1 := fakeContact{id: newNodeID(1), seen: time.Now()}
-	c2 := fakeContact{id: newNodeID(2), seen: time.Now()}
-	c3 := fakeContact{id: newNodeID(3), seen: time.Now()}
+	c1 := testContact{id: newNodeID(1), seen: time.Now()}
+	c2 := testContact{id: newNodeID(2), seen: time.Now()}
+	c3 := testContact{id: newNodeID(3), seen: time.Now()}
 
 	// 1) Insert out of order
 	b.Insert(c2)

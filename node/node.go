@@ -3,30 +3,15 @@ package node
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/danmuck/dps_net/api"
 )
 
-type Contact struct {
-	id       api.NodeID // node ID of the peer
-	address  string     // address of the peer
-	lastSeen time.Time  // last time the peer was seen
-
-	lock sync.RWMutex
-}
-
-func (c *Contact) ID() api.NodeID
-
-func (c *Contact) Address() string
-
-func (c *Contact) LastSeen() time.Time
-
 type Node struct {
-	info    api.Contact
-	net     api.NetworkManager
-	storage api.Storage
-	cache   api.Storage
+	info    api.ContactInterface
+	net     api.NetworkManagerInterface
+	storage api.StorageInterface
+	cache   api.StorageInterface
 
 	lock sync.RWMutex
 }

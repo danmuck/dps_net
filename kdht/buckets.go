@@ -11,10 +11,10 @@ import (
 )
 
 type kBucket struct {
-	router *RoutingTable // routing table containing this kBucket
-	depth  int           // depth of this kBucket in the routing table
-	isFull bool          // whether this kBucket is full
-	peers  []api.Contact // peers in this kBucket
+	router *RoutingTable     // routing table containing this kBucket
+	depth  int               // depth of this kBucket in the routing table
+	isFull bool              // whether this kBucket is full
+	peers  []api.ContactInterface // peers in this kBucket
 
 	lock sync.RWMutex
 }
@@ -24,7 +24,7 @@ func newBucket(router *RoutingTable, depth int) *kBucket {
 		router: router,
 		depth:  depth,
 		isFull: false,
-		peers:  make([]api.Contact, 0, router.k),
+		peers:  make([]api.ContactInterface, 0, router.k),
 	}
 }
 
@@ -48,7 +48,7 @@ func (b *kBucket) updateFull() {
 	}
 }
 
-func (b *kBucket) containsContact(c api.Contact) bool {
+func (b *kBucket) containsContact(c api.ContactInterface) bool {
 	for _, contact := range b.peers {
 		if contact.ID() == c.ID() {
 			return true
@@ -61,7 +61,7 @@ func (b *kBucket) containsContact(c api.Contact) bool {
 // Insert adds c to the bucket (removing any old entry),
 // then sorts b.peers by increasing XOR‐distance to the local node.
 // //
-func (b *kBucket) Insert(c api.Contact) bool {
+func (b *kBucket) Insert(c api.ContactInterface) bool {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -92,7 +92,7 @@ func (b *kBucket) Insert(c api.Contact) bool {
 	return b.containsContact(c)
 }
 
-func (b *kBucket) Remove(c api.Contact) bool {
+func (b *kBucket) Remove(c api.ContactInterface) bool {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 

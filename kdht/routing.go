@@ -13,15 +13,15 @@ import (
 
 // the RoutingTable represents the kademlia protocol routing table
 type RoutingTable struct {
-	local   api.Node   // the local node
-	k       int        // k value as per kademlia
-	alpha   int        // alpha value as per kademlia
-	buckets []*kBucket // max length of api.KeyBits
+	local   api.NodeInterface // the local node
+	k       int               // k value as per kademlia
+	alpha   int               // alpha value as per kademlia
+	buckets []*kBucket        // max length of api.KeyBits
 
 	lock sync.Mutex
 }
 
-func NewRoutingTable(localNode api.Node, k int, alpha int) *RoutingTable {
+func NewRoutingTable(localNode api.NodeInterface, k int, alpha int) *RoutingTable {
 	rt := &RoutingTable{
 		local:   localNode,
 		k:       k,
@@ -37,7 +37,7 @@ func (rt *RoutingTable) K() int {
 	return rt.k
 }
 
-func (rt *RoutingTable) GetBucket(i int) ([]api.Contact, error) {
+func (rt *RoutingTable) GetBucket(i int) ([]api.ContactInterface, error) {
 	rt.lock.Lock()
 	defer rt.lock.Unlock()
 
@@ -45,12 +45,12 @@ func (rt *RoutingTable) GetBucket(i int) ([]api.Contact, error) {
 		return nil, fmt.Errorf("bucket index %d out of range", i)
 	}
 	// return a copy so caller can’t mutate your internal slice
-	peers := make([]api.Contact, len(rt.buckets[i].peers))
+	peers := make([]api.ContactInterface, len(rt.buckets[i].peers))
 	copy(peers, rt.buckets[i].peers)
 	return peers, nil
 }
 
-func (rt *RoutingTable) Update(ctx context.Context, c api.Contact) error {
+func (rt *RoutingTable) Update(ctx context.Context, c api.ContactInterface) error {
 	for {
 		rt.lock.Lock()
 
@@ -93,7 +93,7 @@ func (rt *RoutingTable) Update(ctx context.Context, c api.Contact) error {
 	}
 }
 
-func (rt *RoutingTable) Remove(ctx context.Context, c api.Contact) error {
+func (rt *RoutingTable) Remove(ctx context.Context, c api.ContactInterface) error {
 	rt.lock.Lock()
 	defer rt.lock.Unlock()
 
@@ -113,12 +113,12 @@ func (rt *RoutingTable) Remove(ctx context.Context, c api.Contact) error {
 	return nil
 }
 
-func (rt *RoutingTable) FindClosestK(ctx context.Context, target api.NodeID) ([]api.Contact, error) {
+func (rt *RoutingTable) FindClosestK(ctx context.Context, target api.NodeID) ([]api.ContactInterface, error) {
 	rt.lock.Lock()
 	defer rt.lock.Unlock()
 
 	// gather all peers (except local) into a single slice
-	all := make([]api.Contact, 0)
+	all := make([]api.ContactInterface, 0)
 	distances := make(map[api.NodeID]api.NodeID, rt.k)
 	for _, bucket := range rt.buckets {
 		for _, c := range bucket.peers {

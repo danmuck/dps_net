@@ -8,10 +8,10 @@ import (
 )
 
 type NetworkManager struct {
-	nodeID    api.NodeID        // local nodeID
-	address   string            // local network address <ip:port>
-	router    *api.RoutingTable // p2p network routing table
-	neighbors []*api.Contact    // active/recent connections
+	nodeID    api.NodeID                 // local nodeID
+	address   string                     // local network address <ip:port>
+	router    *api.RoutingTableInterface // p2p network routing table
+	neighbors []*api.ContactInterface    // active/recent connections
 
 	udpListener string // UDP socket listener ** TYPE NOT IMPLEMENTED
 	tcpListener string // TCP socket listener ** TYPE NOT IMPLEMENTED
@@ -19,18 +19,18 @@ type NetworkManager struct {
 	lock sync.Mutex
 }
 
-func (nm *NetworkManager) Ping(ctx context.Context, to api.Contact) error {
+func (nm *NetworkManager) Ping(ctx context.Context, to api.ContactInterface) error {
 	return nil
 }
 
-func (nm *NetworkManager) FindNodeRPC(ctx context.Context, to api.Contact, target api.NodeID) ([]api.Contact, error) {
+func (nm *NetworkManager) FindNodeRPC(ctx context.Context, to api.ContactInterface, target api.NodeID) ([]api.ContactInterface, error) {
 	return nil, nil
 }
 
-func (nm *NetworkManager) FindValueRPC(ctx context.Context, to api.Contact, key api.NodeID) (value []byte, closest []api.Contact, err error) {
+func (nm *NetworkManager) FindValueRPC(ctx context.Context, to api.ContactInterface, key api.NodeID) (value []byte, closest []api.ContactInterface, err error) {
 	return nil, nil, nil
 }
 
-func (nm *NetworkManager) StoreRPC(ctx context.Context, to api.Contact, key api.NodeID, value []byte) error {
+func (nm *NetworkManager) StoreRPC(ctx context.Context, to api.ContactInterface, key api.NodeID, value []byte) error {
 	return nil
 }
