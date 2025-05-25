@@ -1,7 +1,9 @@
 package api
 
 import (
+	"bytes"
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 
 	"golang.org/x/crypto/blake2b"
@@ -32,6 +34,10 @@ type NodeID [KeyBytes]byte
 type DataHash [DataHashBytes]byte
 type Address string
 
+func (n *NodeID) String() string {
+	return hex.EncodeToString(n[:])
+}
+
 // Application Hash for version integrity
 //
 //	-- AppLock used for running different instances of an app/plugin
@@ -39,16 +45,32 @@ type Address string
 type AppID [ApplicationIDBytes]byte
 type AppLock [ApplicationIDBytes]byte
 
+func SliceCompare(a []byte, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	return bytes.Compare(a, b) == 0
+}
+
 // ////
 // SliceToNodeID converts a byte slice to a NodeID
 // //
-func SliceToNodeID(data []byte) (NodeID, error) {
+func SliceToNodeID(data []byte) NodeID {
 	if len(data) != KeyBytes {
-		return NodeID{}, fmt.Errorf("expected %d bytes, got %d", KeyBytes, len(data))
+		return NodeID{}
 	}
 	var id NodeID
 	copy(id[:], data)
-	return id, nil
+	return id
+}
+
+func NodeIDToSlice(id NodeID) ([]byte, error) {
+	var b []byte
+	len := copy(b, id[:])
+	if len != KeyBytes {
+		return nil, fmt.Errorf("expected %d bytes, got %d", KeyBytes, len)
+	}
+	return b, nil
 }
 
 // ////
@@ -59,6 +81,18 @@ func SliceToDataID(data []byte) (DataHash, error) {
 		return DataHash{}, fmt.Errorf("expected %d bytes, got %d", DataHashBytes, len(data))
 	}
 	var id DataHash
+	copy(id[:], data)
+	return id, nil
+}
+
+// ////
+// SliceToDataID converts a byte slice to a DataID
+// //
+func SliceToAppLock(data []byte) (AppLock, error) {
+	if len(data) != ApplicationIDBytes {
+		return AppLock{}, fmt.Errorf("expected %d bytes, got %d", DataHashBytes, len(data))
+	}
+	var id AppLock
 	copy(id[:], data)
 	return id, nil
 }
@@ -90,6 +124,12 @@ func Blake2Conv(data []byte) ([KeyBytes]byte, error) {
 func GenerateRandomNodeID() NodeID {
 	var id NodeID
 	rand.Read(id[:])
+	return id
+}
+
+func GenerateRandomBytes(n int) []byte {
+	var id []byte = make([]byte, n)
+	rand.Read(id[:n])
 	return id
 }
 

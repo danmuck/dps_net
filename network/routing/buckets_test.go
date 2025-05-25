@@ -1,10 +1,10 @@
-package kdht
+package routing
 
 import (
 	"context"
 	"reflect"
+	"strconv"
 	"testing"
-	"time"
 
 	"github.com/danmuck/dps_net/api"
 )
@@ -12,55 +12,43 @@ import (
 // dummyNode implements api.Node just for ID().
 type dummyNode struct{ id api.NodeID }
 
-func (d dummyNode) ID() api.NodeID                                       { return d.id }
-func (d dummyNode) Address() string                                      { return "" }
-func (d dummyNode) Contact() api.ContactInterface                        { return testContact{id: d.id, seen: time.Now()} }
 func (d dummyNode) Join(ctx context.Context, bootstrapAddr string) error { return nil }
 func (d dummyNode) StoreValue(ctx context.Context, key api.NodeID, value []byte) error {
 	return nil
 }
-func (d dummyNode) FindValue(ctx context.Context, key api.NodeID) ([]byte, []api.ContactInterface, error) {
+func (d dummyNode) FindValue(ctx context.Context, key api.NodeID) ([]byte, []api.Contact, error) {
 	return nil, nil, nil
 }
-func (d dummyNode) FindNode(ctx context.Context, key api.NodeID, count int) ([]api.ContactInterface, error) {
+func (d dummyNode) FindNode(ctx context.Context, key api.NodeID, count int) ([]api.Contact, error) {
 	return nil, nil
 }
 func (d dummyNode) Shutdown(ctx context.Context) error { return nil }
 
-// testContact implements api.Contact
-type testContact struct {
-	id   api.NodeID
-	seen time.Time
-}
-
-func (f testContact) ID() api.NodeID      { return f.id }
-func (f testContact) Address() string     { return "" }
-func (f testContact) LastSeen() time.Time { return f.seen }
-func (f testContact) UpdateLastSeen()     { f.seen = time.Now() }
-
 // newNodeID makes a NodeID whose last byte is v (all other bytes zero).
-func newNodeID(v byte) api.NodeID {
-	var id api.NodeID
+func newNodeID(v byte) []byte {
+	var id []byte = make([]byte, api.KeyBytes)
 	id[len(id)-1] = v
 	return id
 }
 
 func TestKBucket_InsertNew(t *testing.T) {
-	local := dummyNode{id: api.NodeID{}}
+	// local := dummyNode{id: api.NodeID{}}
+
+	local := api.NewContact(make([]byte, api.KeyBytes), "localhost", "6668", "6669")
+	c1 := api.NewContact(newNodeID(1), "localhost", "6667", "6670")
+	c2 := api.NewContact(newNodeID(2), "localhost", "6666", "6671")
+	c3 := api.NewContact(newNodeID(3), "localhost", "6665", "6672")
 	rt := &RoutingTable{local: local, k: 2, buckets: make([]*kBucket, 0)}
 	b := newBucket(rt, 0)
-
-	c1 := testContact{id: newNodeID(1), seen: time.Now()}
-	c2 := testContact{id: newNodeID(2), seen: time.Now()}
-	c3 := testContact{id: newNodeID(3), seen: time.Now()}
 
 	t.Run("first insert", func(t *testing.T) {
 		b.Insert(c2)
 		if got, want := len(b.peers), 1; got != want {
 			t.Fatalf("len after first insert = %d; want %d", got, want)
 		}
-		if got, want := b.peers[0].ID(), c2.ID(); got != want {
-			t.Errorf("first element = %v; want %v", got, want)
+		if !api.SliceCompare(b.peers[0].GetId(), c2.GetId()) {
+			// if got, want := b.peers[0].ID(), c2.ID(); got != want {
+			t.Errorf("first element = %v; want %v", b.peers[0].GetId(), c2.GetId())
 		}
 	})
 
@@ -69,8 +57,8 @@ func TestKBucket_InsertNew(t *testing.T) {
 		if got, want := len(b.peers), 2; got != want {
 			t.Fatalf("len after second insert = %d; want %d", got, want)
 		}
-		wantOrder := []api.NodeID{c1.ID(), c2.ID()}
-		gotOrder := []api.NodeID{b.peers[0].ID(), b.peers[1].ID()}
+		wantOrder := []api.NodeID{api.NodeID(c1.GetId()), api.NodeID(c2.GetId())}
+		gotOrder := []api.NodeID{api.NodeID(b.peers[0].GetId()), api.NodeID(b.peers[1].GetId())}
 		if !reflect.DeepEqual(gotOrder, wantOrder) {
 			t.Errorf("order = %v; want %v", gotOrder, wantOrder)
 		}
@@ -100,15 +88,16 @@ func TestKBucket_InsertNew(t *testing.T) {
 }
 func TestKBucket_Insert(t *testing.T) {
 	// local ID = 0x00…00
-	local := dummyNode{id: api.NodeID{}}
+	local := api.NewContact(make([]byte, api.KeyBytes), "localhost", "6668", "6669")
+
 	rt := &RoutingTable{local: local, k: 4, buckets: make([]*kBucket, 0)}
 
 	b := newBucket(rt, 0)
 
 	// Contacts at distances 1,2,3 (last‐byte values)
-	c1 := testContact{id: newNodeID(1), seen: time.Now()}
-	c2 := testContact{id: newNodeID(2), seen: time.Now()}
-	c3 := testContact{id: newNodeID(3), seen: time.Now()}
+	c1 := api.NewContact(newNodeID(1), "localhost", "6667", "6670")
+	c2 := api.NewContact(newNodeID(2), "localhost", "6666", "6671")
+	c3 := api.NewContact(newNodeID(3), "localhost", "6665", "6672")
 
 	// 1) Insert out of order
 	b.Insert(c2)
@@ -146,28 +135,27 @@ func TestKBucket_Insert(t *testing.T) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Helper: creates a NodeID with the given first-byte, others zero
-func newIDFirstByte(b byte) api.NodeID {
-	var id api.NodeID
+func newIDFirstByte(b byte) []byte {
+	var id []byte = make([]byte, api.KeyBytes)
 	id[0] = b
 	return id
 }
 
-func newIDLastByte(b byte) api.NodeID {
-	var id api.NodeID
+func newIDLastByte(b byte) []byte {
+	var id []byte = make([]byte, api.KeyBytes)
 	id[len(id)-1] = b
 	return id
 }
 
 func TestInsert_SortingAndCapacity(t *testing.T) {
 	// local node has ID=0
-	local := dummyNode{id: newIDLastByte(0)}
+	local := api.NewContact(make([]byte, api.KeyBytes), "localhost", "6668", "6669")
 	rt := &RoutingTable{local: local, k: 2}
 	b := newBucket(rt, 0)
 
-	// contacts with IDs 3,1,2
-	c3 := dummyNode{id: newIDLastByte(3)}.Contact()
-	c1 := dummyNode{id: newIDLastByte(1)}.Contact()
-	c2 := dummyNode{id: newIDLastByte(2)}.Contact()
+	c1 := api.NewContact(newIDLastByte(1), "localhost", "6667", "6670")
+	c2 := api.NewContact(newIDLastByte(2), "localhost", "6666", "6671")
+	c3 := api.NewContact(newIDLastByte(3), "localhost", "6665", "6672")
 
 	b.Insert(c3)
 	b.Insert(c1)
@@ -182,12 +170,13 @@ func TestInsert_SortingAndCapacity(t *testing.T) {
 }
 
 func TestDuplicateInsert_RefreshesPosition(t *testing.T) {
-	local := dummyNode{id: newIDLastByte(0)}
+	local := api.NewContact(newIDLastByte(3), "localhost", "6668", "6669")
 	rt := &RoutingTable{local: local, k: 3}
 	b := newBucket(rt, 0)
 
-	c1 := dummyNode{id: newIDLastByte(1)}.Contact()
-	c2 := dummyNode{id: newIDLastByte(2)}.Contact()
+	// contacts with IDs 3,1,2
+	c1 := api.NewContact(newIDLastByte(1), "localhost", "6667", "6670")
+	c2 := api.NewContact(newIDLastByte(2), "localhost", "6666", "6671")
 
 	b.Insert(c1)
 	b.Insert(c2)
@@ -202,13 +191,15 @@ func TestDuplicateInsert_RefreshesPosition(t *testing.T) {
 }
 
 func TestSplit_PartitionsPeers(t *testing.T) {
-	local := dummyNode{id: newIDFirstByte(0)} // first byte 0 => all zeros
+
+	local := api.NewContact(make([]byte, api.KeyBytes), "localhost", "6668", "6669")
 	rt := NewRoutingTable(local, 2, 1)
 
+	// contacts with IDs 3,1,2
 	// firstPeer has prefixLen(local, firstPeer)=0 → goes into bucket0
-	firstPeer := dummyNode{id: newIDFirstByte(0x80)}.Contact()
+	firstPeer := api.NewContact(newIDFirstByte(0x80), "localhost", "6667", "6670")
 	// secondPeer has prefixLen(local, secondPeer)=1 → should wind up in bucket1 after split
-	secondPeer := dummyNode{id: newIDFirstByte(0x40)}.Contact()
+	secondPeer := api.NewContact(newIDFirstByte(0x40), "localhost", "6666", "6671")
 
 	// 1) Fill bucket0 to capacity ([local, firstPeer])
 	rt.Update(context.Background(), firstPeer)
@@ -236,7 +227,7 @@ func TestSplit_PartitionsPeers(t *testing.T) {
 	}
 
 	// right must contain only secondPeer
-	if !right.containsContact(local.Contact()) {
+	if !right.containsContact(local) {
 		t.Errorf("left bucket missing local node")
 	}
 	if !right.containsContact(secondPeer) {
@@ -252,13 +243,14 @@ func TestSplit_PartitionsPeers(t *testing.T) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func TestFindClosest_SortsByDistance(t *testing.T) {
-	local := dummyNode{id: newIDLastByte(0)}
+	local := api.NewContact(make([]byte, api.KeyBytes), "localhost", "6668", "6669")
 	k := 3
 	rt := NewRoutingTable(local, k, 1)
 
+	ctx := context.Background()
 	// Insert peers with IDs 5,1,3,2,4 (out of order)
-	for _, v := range []byte{5, 1, 3, 2, 4} {
-		rt.Update(context.Background(), dummyNode{id: newIDLastByte(v)}.Contact())
+	for i, v := range []byte{5, 1, 3, 2, 4} {
+		rt.Update(ctx, api.NewContact(newIDLastByte(v), "localhost", strconv.Itoa(6667-i), strconv.Itoa(6670+i)))
 	}
 
 	// target=0 → distances are 1,2,3,4,5
@@ -273,7 +265,7 @@ func TestFindClosest_SortsByDistance(t *testing.T) {
 	for _, c := range got {
 		gotIDs = append(gotIDs, c.ID())
 	}
-	want := []api.NodeID{newIDLastByte(1), newIDLastByte(2), newIDLastByte(3)}
+	want := []api.NodeID{api.NodeID(newIDLastByte(1)), api.NodeID(newIDLastByte(2)), api.NodeID(newIDLastByte(3))}
 	if !reflect.DeepEqual(gotIDs, want) {
 		t.Errorf("FindClosest(0) = %v; \n\twant %v", gotIDs, want)
 	}
@@ -282,13 +274,16 @@ func TestFindClosest_SortsByDistance(t *testing.T) {
 // TestFindClosest_FewerPeersThanK verifies that when fewer than k peers exist,
 // FindClosest returns them all, sorted.
 func TestFindClosest_FewerPeersThanK(t *testing.T) {
-	local := dummyNode{id: newIDLastByte(0)}
+	// local := dummyNode{id: newIDLastByte(0)}
+	local := api.NewContact(make([]byte, api.KeyBytes), "localhost", "6668", "6669")
 	k := 5
 	rt := NewRoutingTable(local, k, 1)
 
+	ctx := context.Background()
 	// Insert only two peers
-	for _, v := range []byte{2, 4} {
-		rt.Update(context.Background(), dummyNode{id: newIDLastByte(v)}.Contact())
+	for i, v := range []byte{2, 4} {
+		rt.Update(ctx, api.NewContact(newIDLastByte(v), "localhost", strconv.Itoa(6667-i), strconv.Itoa(6670+i)))
+
 	}
 
 	got, err := rt.FindClosestK(context.Background(), api.NodeID{})
@@ -310,17 +305,21 @@ func TestFindClosest_FewerPeersThanK(t *testing.T) {
 
 // TestFindClosest_NonzeroTarget checks sorting when the target is not zero.
 func TestFindClosest_NonzeroTarget(t *testing.T) {
-	local := dummyNode{id: newIDLastByte(0)}
+	// local := dummyNode{id: newIDLastByte(0)}
+	local := api.NewContact(make([]byte, api.KeyBytes), "localhost", "6668", "6669")
+
 	k := 3
 	rt := NewRoutingTable(local, k, 1)
 
+	ctx := context.Background()
 	// Insert peers 10,20,30
-	for _, v := range []byte{10, 20, 30} {
-		rt.Update(context.Background(), dummyNode{id: newIDLastByte(v)}.Contact())
+	for i, v := range []byte{10, 20, 30} {
+		rt.Update(ctx, api.NewContact(newIDLastByte(v), "localhost", strconv.Itoa(6667-i), strconv.Itoa(6670+i)))
+
 	}
 
 	// target=25 → XOR distances: |10^25|=19, |20^25|=13, |30^25|=7
-	got, err := rt.FindClosestK(context.Background(), newIDLastByte(25))
+	got, err := rt.FindClosestK(context.Background(), api.NodeID(newIDLastByte(25)))
 	if err != nil {
 		t.Fatal(err)
 	}

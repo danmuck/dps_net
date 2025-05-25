@@ -1,0 +1,74 @@
+syntax = "proto3";
+package services;
+
+option go_package = "github.com/danmuck/dps_net/network/services";
+
+import "api/rpc.proto";
+
+// ////
+// Request/Response Messages
+// //
+message PING {
+  	api.Contact from = 1;
+   	bytes value = 2;
+}
+
+message ACK {
+  	api.Contact from = 1;
+   	bytes value = 2;
+}
+
+message STORE {
+  	api.Contact from = 1;
+  	bytes key = 2;
+  	bytes value = 3;
+}
+
+message DELETE {
+  	api.Contact from = 1;
+  	bytes key = 2;
+}
+
+message FIND_NODE {
+	api.Contact from = 1;
+	bytes target_id = 2;
+}
+
+message FIND_VALUE {
+	api.Contact from = 1;
+	bytes key = 2;
+}
+
+message NODES {
+	api.Contact from = 1;
+	repeated api.Contact nodes = 2;
+}
+
+message VALUE {
+	api.Contact from = 1;
+	bytes key = 2;
+	bytes value = 3;
+	repeated api.Contact nodes = 4;
+}
+
+message REFRESH {
+	api.Contact from = 1;
+	bytes key = 2;
+}
+
+// ////
+// Top-level RPC
+// //
+message Kademlia_RPC {
+	oneof payload {
+	    PING ping = 1;
+	    ACK ack = 2;
+	    STORE store = 3;
+	    DELETE delete = 4;
+	    FIND_NODE find_node = 5;
+	    FIND_VALUE find_value = 6;
+	    NODES nodes = 7;
+	    VALUE value = 8;
+	    REFRESH refresh = 9;
+	}
+}

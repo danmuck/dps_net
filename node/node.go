@@ -8,12 +8,19 @@ import (
 )
 
 type Node struct {
-	info    api.ContactInterface
-	net     api.NetworkManagerInterface
+	info *Contact
+	// net     api.NetworkManagerInterface
 	storage api.StorageInterface
 	cache   api.StorageInterface
 
 	lock sync.RWMutex
+}
+
+func NewNode(id api.NodeID, address string) *Node {
+	n := &Node{
+		info: NewContact(id, address),
+	}
+	return n
 }
 
 func (n *Node) ID() api.NodeID

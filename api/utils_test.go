@@ -10,10 +10,10 @@ func TestConvertToNodeID(t *testing.T) {
 	for i := range KeyBytes {
 		input[i] = byte(i)
 	}
-	id, err := SliceToNodeID(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	id := SliceToNodeID(input)
+	// if err != nil {
+	// 	t.Fatalf("unexpected error: %v", err)
+	// }
 	if !bytes.Equal(id[:], input) {
 		t.Errorf("expected %v, got %v", input, id)
 	}

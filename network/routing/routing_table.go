@@ -1,4 +1,4 @@
-package kdht
+package routing
 
 import (
 	"context"
@@ -13,31 +13,35 @@ import (
 
 // the RoutingTable represents the kademlia protocol routing table
 type RoutingTable struct {
-	local   api.NodeInterface // the local node
-	k       int               // k value as per kademlia
-	alpha   int               // alpha value as per kademlia
-	buckets []*kBucket        // max length of api.KeyBits
+	local   *api.Contact // the local node
+	k       int          // k value as per kademlia
+	alpha   int          // alpha value as per kademlia
+	buckets []*kBucket   // max length of api.KeyBits
 
 	lock sync.Mutex
 }
 
-func NewRoutingTable(localNode api.NodeInterface, k int, alpha int) *RoutingTable {
+func NewRoutingTable(localNode *api.Contact, k int, alpha int) *RoutingTable {
 	rt := &RoutingTable{
 		local:   localNode,
 		k:       k,
 		alpha:   alpha,
 		buckets: make([]*kBucket, 0, api.KeyBits),
 	}
-	rt.Update(context.TODO(), localNode.Contact())
+	rt.Update(context.TODO(), localNode)
 
 	return rt
+}
+
+func (rt *RoutingTable) GetLocal() *api.Contact {
+	return rt.local
 }
 
 func (rt *RoutingTable) K() int {
 	return rt.k
 }
 
-func (rt *RoutingTable) GetBucket(i int) ([]api.ContactInterface, error) {
+func (rt *RoutingTable) GetBucket(i int) ([]*api.Contact, error) {
 	rt.lock.Lock()
 	defer rt.lock.Unlock()
 
@@ -45,22 +49,24 @@ func (rt *RoutingTable) GetBucket(i int) ([]api.ContactInterface, error) {
 		return nil, fmt.Errorf("bucket index %d out of range", i)
 	}
 	// return a copy so caller can’t mutate your internal slice
-	peers := make([]api.ContactInterface, len(rt.buckets[i].peers))
+	peers := make([]*api.Contact, len(rt.buckets[i].peers))
 	copy(peers, rt.buckets[i].peers)
 	return peers, nil
 }
 
-func (rt *RoutingTable) Update(ctx context.Context, c api.ContactInterface) error {
+func (rt *RoutingTable) Update(ctx context.Context, c *api.Contact) error {
+	localID := api.SliceToNodeID(rt.local.GetId())
+	otherID := api.SliceToNodeID(c.GetId())
 	for {
 		rt.lock.Lock()
 
-		bucketIndex := api.SharedPrefixLength(rt.local.ID(), c.ID())
+		bucketIndex := api.SharedPrefixLength(localID, otherID)
 		size := len(rt.buckets)
 		fmt.Fprintf(os.Stderr, "[rt.Update(1)] Inserting-> index: %v size: %v \n", bucketIndex, size)
-
-		if size == 0 || c.ID() == rt.local.ID() {
+		if size == 0 || api.SliceCompare(c.GetId(), rt.local.GetId()) {
+			// if size == 0 || c.ID() == rt.local.ID() {
 			bucket := newBucket(rt, 0)
-			fmt.Fprintf(os.Stderr, "Inserting Local: %08b \n", c.ID())
+			fmt.Fprintf(os.Stderr, "Inserting Local: %08b \n", otherID)
 			bucket.Insert(c)
 			rt.buckets = append(rt.buckets, bucket)
 			rt.lock.Unlock()
@@ -87,18 +93,21 @@ func (rt *RoutingTable) Update(ctx context.Context, c api.ContactInterface) erro
 		}
 
 		rt.lock.Unlock()
-		fmt.Fprintf(os.Stderr, "Inserting Other: %08b \n", c.ID())
+		fmt.Fprintf(os.Stderr, "Inserting Other: %08b \n", otherID)
 		bucket.Insert(c)
 		return nil
 	}
 }
 
-func (rt *RoutingTable) Remove(ctx context.Context, c api.ContactInterface) error {
+func (rt *RoutingTable) Remove(ctx context.Context, c *api.Contact) error {
 	rt.lock.Lock()
 	defer rt.lock.Unlock()
 
+	localID := api.SliceToNodeID(rt.local.GetId())
+	otherID := api.SliceToNodeID(c.GetId())
+
 	// get the bucket that the node belongs in
-	bucketIndex := api.KBucketIndex(rt.local.ID(), c.ID())
+	bucketIndex := api.KBucketIndex(localID, otherID)
 
 	// if we dont have that bucket in our table, take the deepest bucket
 	// if a node is not in its proper bucket, it will always be with the local node
@@ -113,31 +122,35 @@ func (rt *RoutingTable) Remove(ctx context.Context, c api.ContactInterface) erro
 	return nil
 }
 
-func (rt *RoutingTable) FindClosestK(ctx context.Context, target api.NodeID) ([]api.ContactInterface, error) {
+func (rt *RoutingTable) FindClosestK(ctx context.Context, target api.NodeID) ([]*api.Contact, error) {
 	rt.lock.Lock()
 	defer rt.lock.Unlock()
 
 	// gather all peers (except local) into a single slice
-	all := make([]api.ContactInterface, 0)
+	all := make([]*api.Contact, 0)
 	distances := make(map[api.NodeID]api.NodeID, rt.k)
+	localID := api.SliceToNodeID(rt.local.GetId())
 	for _, bucket := range rt.buckets {
 		for _, c := range bucket.peers {
-			if c.ID() == rt.local.ID() {
+			otherID := api.SliceToNodeID(c.GetId())
+			if api.SliceCompare(localID[:], otherID[:]) {
 				continue
 			}
 			// NOTE: likely not necessary and extra overhead
 			// checking for now in case there are issues later
-			if _, seen := distances[c.ID()]; seen {
+			if _, seen := distances[otherID]; seen {
 				continue
 			}
 			all = append(all, c)
-			distances[c.ID()] = api.XorDistance(c.ID(), target)
+			distances[otherID] = api.XorDistance(otherID, target)
 		}
 	}
 
 	// sort globally by XOR-distance to target
 	sort.Slice(all, func(i, j int) bool {
-		return api.LessDistance(distances[all[i].ID()], distances[all[j].ID()])
+		ni_id := api.SliceToNodeID(all[i].GetId())
+		nj_id := api.SliceToNodeID(all[j].GetId())
+		return api.LessDistance(distances[ni_id], distances[nj_id])
 	})
 
 	// we only want to return k nodes
@@ -153,7 +166,7 @@ func (rt *RoutingTable) RoutingTableString() string {
 	defer rt.lock.Unlock()
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Routing table: [%08b]\n  %d buckets: \n", rt.local.ID(), len(rt.buckets)))
+	sb.WriteString(fmt.Sprintf("Routing table: [%08b]\n  %d buckets: \n", rt.local.GetId(), len(rt.buckets)))
 	for _, b := range rt.buckets {
 		sb.WriteString(b.PrintString())
 		// sb.WriteString(fmt.Sprintf("Bucket %2d (depth %2d): %d peers \n",

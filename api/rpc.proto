@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/danmuck/dps_net/api";
+
+import "google/protobuf/timestamp.proto";
+
+// ////
+// Contact represents a node in the network.
+// //
+message Contact {
+  	bytes id = 1;
+  	string tcp_address = 2;
+  	string udp_address = 3;
+  	google.protobuf.Timestamp last_seen = 4;
+}
+
+// ////
+// The generic RPC wrapper
+// //
+message RPC {
+  string 	service = 1;  // e.g. "KVService.go".Hash()
+  string	method  = 2;  // e.g. "GET"
+  Contact   sender 	= 3;
+  bytes  	payload = 4;  // protobuf‐marshaled request message
+}
+
+// ////
+// A single RPC endpoint that will dispatch based on service+method.
+// //
+service EndpointHandler {
+  rpc Call(RPC) returns (RPC);
+}

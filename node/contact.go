@@ -15,6 +15,9 @@ type Contact struct {
 	lock sync.RWMutex
 }
 
+// ////
+// Create new Contact from NodeID and address
+// //
 func NewContact(id api.NodeID, address string) *Contact {
 	c := &Contact{
 		id:       id,
@@ -23,6 +26,36 @@ func NewContact(id api.NodeID, address string) *Contact {
 	}
 	return c
 }
+
+// // ////
+// // Convert Contact to an api.Contact ProtoBuffer
+// // //
+// func ContactToProto(c *Contact) *api.Contact {
+// 	id, err := api.NodeIDToSlice(c.ID())
+// 	if err != nil {
+// 		return nil
+// 	}
+// 	return &api.Contact{
+// 		Id:       id,
+// 		Address:  c.Address(),
+// 		LastSeen: timestamppb.New(c.LastSeen()),
+// 	}
+// }
+
+// // ////
+// // Convert api.Contact ProtBuffer to Contact
+// // //
+// func ContactFromProto(pb *api.Contact) *Contact {
+// 	id := api.SliceToNodeID(pb.GetId())
+// 	// if err != nil {
+// 	// 	return nil
+// 	// }
+// 	return &Contact{
+// 		id:       id,
+// 		address:  pb.Address,
+// 		lastSeen: pb.LastSeen.AsTime(),
+// 	}
+// }
 
 func (c *Contact) ID() api.NodeID {
 	c.lock.RLock()
