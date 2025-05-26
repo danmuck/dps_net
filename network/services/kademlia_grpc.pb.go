@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.29.3
-// source: network/services/kad_rpc.proto
+// source: network/services/kademlia.proto
 
 package services
 
@@ -327,5 +327,5 @@ var KademliaService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "network/services/kad_rpc.proto",
+	Metadata: "network/services/kademlia.proto",
 }

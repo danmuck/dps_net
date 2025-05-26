@@ -10,7 +10,7 @@ import (
 type Packet struct {
 	Ctx     context.Context      // request context
 	RPC     *api.RPC             // the unmarshaled envelope
-	Peer    *api.Contact         // e.g. "ip:port" or some nodeID string
+	Sender  *api.Contact         // e.g. "ip:port" or some nodeID string
 	Network string               // tcp/udp
 	Reply   func(*api.RPC) error // call this to send your response
 }

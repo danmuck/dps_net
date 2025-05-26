@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -39,7 +40,7 @@ type NetworkManager struct {
 	udpServ  transport.Server // UDP packet server
 	tcpServ  transport.Server // TCP packet server
 
-	endpoints          map[string]*api.Contact                // address -> contact
+	peers              map[string]*api.Contact                // username -> contact
 	active             map[*api.Contact]bool                  // contact -> isActive
 	appLocks           map[string]api.AppLock                 // appID -> appLock
 	appHandlerRegistry map[api.AppLock]map[string]RPC_Handler // name -> rpc name -> handler
@@ -51,38 +52,6 @@ type NetworkManager struct {
 // Initialize a new NetworkManager for a Node
 // //
 func NewNetworkManager(local *api.Contact, cfg config.Config) (*NetworkManager, error) {
-	// much of this should probably me moved to node initializer
-	// cfg, err := config.Load("")
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// var tcpPort, udpPort string = "", ""
-	// // TCP/gRPC
-	// if cfg.TCPPort != 0 {
-	// 	tcpPort = strconv.Itoa(cfg.TCPPort)
-	// 	if tcpPort != "" {
-	// 		// tcpsrv, err := transport.NewUDPServer(cfg.Address, tcpPort)
-	// 		// if err != nil {
-	// 		// 	return nil, err
-	// 		// }
-	// 		// tcpRcv = tcpsrv.Receiver()
-	// 	}
-
-	// }
-
-	// // UDP
-	// if cfg.UDPPort != 0 {
-	// 	udpPort = strconv.Itoa(cfg.UDPPort)
-	// 	if udpPort != "" {
-	// 		// udpsrv, err := transport.NewUDPServer(cfg.Address, udpPort)
-	// 		// if err != nil {
-	// 		// 	return nil, err
-	// 		// }
-	// 		// udpRcv = udpsrv.Receiver()
-	// 	}
-
-	// }
 
 	// initialize local Contact info
 	// local := api.NewContact(id[:], cfg.Address, tcpPort, udpPort)
@@ -98,7 +67,7 @@ func NewNetworkManager(local *api.Contact, cfg config.Config) (*NetworkManager, 
 		udpServ:  nil,
 		tcpServ:  nil,
 
-		endpoints:          make(map[string]*api.Contact),
+		peers:              make(map[string]*api.Contact),
 		active:             make(map[*api.Contact]bool),
 		appLocks:           make(map[string]api.AppLock),
 		appHandlerRegistry: make(map[api.AppLock]map[string]RPC_Handler),
@@ -123,10 +92,6 @@ func NewNetworkManager(local *api.Contact, cfg config.Config) (*NetworkManager, 
 		nm.appLocks[svc] = app_lock
 	}
 
-	for k, v := range nm.appLocks {
-		log.Printf("Service: %v \n -> appLock: %v \n", k, v)
-	}
-
 	kad := services.KademliaService_ServiceDesc
 	kadDesc := &grpc.ServiceDesc{
 		ServiceName: kad.ServiceName,
@@ -140,42 +105,55 @@ func NewNetworkManager(local *api.Contact, cfg config.Config) (*NetworkManager, 
 		return nil, err
 	}
 
-	log.Printf("[NewNetworkManager] local=%s udp_port=%d appLocks=%v",
-		cfg.Address, cfg.UDPPort, cfg.AppLocks)
+	log.Printf("[NewNetworkManager] local=%s udp_port=%d",
+		cfg.Address, cfg.UDPPort)
+
+	func() {
+		var appLockLog strings.Builder
+		appLockLog.WriteString("[NetworkManager] \n -- AppLock Registry  -- \n")
+		for k, v := range nm.appLocks {
+			entry := fmt.Sprintf("  Service: %v \n  -> appLock: %x \n", k, v)
+			appLockLog.WriteString(entry)
+			// log.Printf("Service: %v \n -> appLock: %v \n", k, v)
+		}
+		appLockLog.WriteString(" -- -- -- -- -- -- -- -- ")
+		log.Println(appLockLog.String())
+	}()
 
 	return nm, nil
 }
 
-func (nm *NetworkManager) Start() {
-	log.Printf("[nm.Start()] starting \n")
+func (nm *NetworkManager) Start() error {
+	log.Printf("[NetworkManager] starting \n")
 	nm.receiver = make(chan transport.Packet)
 	usrv, err := transport.NewUDPServer(nm.localAddr, nm.info.UdpPort, nm.receiver)
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 	nm.udpServ = usrv
 	if err = nm.udpServ.Start(); err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 
 	if nm.udpServ != nil || nm.tcpServ != nil {
 		go nm.serve()
 	} else {
-		log.Printf("[nm.Start()] error")
+		return fmt.Errorf("neither udp or tcp are ready to serve")
 	}
-	return
+	return nil
 }
 
 func (nm *NetworkManager) Shutdown() {
+	log.Printf("[NetworkManager] shutting down")
 	if nm.udpServ != nil {
 		nm.udpServ.Stop()
 	}
 	if nm.tcpServ != nil {
 		nm.tcpServ.Stop()
 	}
-	close(nm.receiver)
+	if nm.receiver != nil {
+		close(nm.receiver)
+	}
 	return
 }
 
@@ -196,7 +174,7 @@ func (m *NetworkManager) RegisterService(svcDesc *grpc.ServiceDesc, service any)
 		return fmt.Errorf("no trusted hash for service %q", svcDesc.ServiceName)
 	}
 
-	log.Printf("[nm.RegisterService()] registering %q with lock %x", svcDesc.ServiceName, appLock)
+	log.Printf("[NetworkManager] registering %q with lock %x", svcDesc.ServiceName, appLock)
 
 	// initialize the handlerRegistry entry for this service
 	m.appHandlerRegistry[api.AppLock(appLock)] = make(map[string]RPC_Handler)
@@ -253,40 +231,40 @@ func (m *NetworkManager) RegisterService(svcDesc *grpc.ServiceDesc, service any)
 // Serves UDP packets
 // //
 func (m *NetworkManager) serve() {
-	log.Printf("[nm.serveUDP()] serving \n")
+	log.Printf("[NetworkManager] serving")
 	for pkt := range m.receiver {
-		// fire each off in its own goroutine
 		go func(pkt transport.Packet) {
 			m.lock.RLock()
 			defer m.lock.RUnlock()
+			log.Printf("[NetworkManager]:%v packet received for %v", m.info.Username, pkt.Sender)
 
 			appLock := m.appLocks[pkt.RPC.Service]
-			svcMap, ok := m.appHandlerRegistry[appLock]
-			if !ok {
-				log.Printf("[nm.serveUDP()] unknown service %q", pkt.RPC.Service)
-				return
-			}
-			handler, ok := svcMap[pkt.RPC.Method]
-			if !ok {
-				log.Printf("[nm.serveUDP()] unknown method %q for %q", pkt.RPC.Method, pkt.RPC.Service)
-				return
-			}
-			log.Printf("[nm.serveUDP()] %s.%s → handler", pkt.RPC.Service, pkt.RPC.Method)
-			respPayload, err := handler(pkt.Ctx, pkt.RPC.Payload)
+			// delegate lookup & call to DispatchRPC
+			log.Printf("[NetworkManager]:%v Dispatching RPC %s.%s",
+				m.info.Username, pkt.RPC.Service, pkt.RPC.Method)
+			respPayload, err := m.DispatchRPC(pkt.Ctx, appLock, pkt.RPC.Method, pkt.RPC.Payload)
 			if err != nil {
-				log.Printf("[nm.serveUDP()] handler %s.%s error: %v", pkt.RPC.Service, pkt.RPC.Method, err)
+				log.Printf("[NetworkManager] handler %s.%s error: %v",
+					pkt.RPC.Service, pkt.RPC.Method, err)
 				return
 			}
-			log.Printf("[nm.serveUDP()] %s.%s → reply %d bytes",
+
+			log.Printf("[NetworkManager] %s.%s → reply %d bytes",
 				pkt.RPC.Service, pkt.RPC.Method, len(respPayload))
 
 			replyEnvelope := &api.RPC{
 				Service: pkt.RPC.Service,
 				Method:  pkt.RPC.Method,
+				Sender:  m.info,
 				Payload: respPayload,
 			}
+
+			// mark peer active
+			m.peers[pkt.Sender.Username] = pkt.Sender
+			m.active[pkt.Sender] = true
+
 			if err := pkt.Reply(replyEnvelope); err != nil {
-				log.Printf("[nm.serveUDP()] reply to %s failed: %v", pkt.Peer, err)
+				log.Printf("[NetworkManager] reply to %s failed: %v", pkt.Sender, err)
 			}
 		}(pkt)
 	}
@@ -294,8 +272,15 @@ func (m *NetworkManager) serve() {
 
 // ////
 // Dispatch RPCs to any network e.g. udp or tcp
+// Verifies the service and returns its handler from the registry
 // //
-func (m *NetworkManager) DispatchRPC(ctx context.Context, service api.AppLock, method string, payload []byte) ([]byte, error) {
+func (m *NetworkManager) DispatchRPC(
+	ctx context.Context,
+	service api.AppLock,
+	method string,
+	payload []byte,
+) ([]byte, error) {
+	log.Printf("[NetworkManager]:%v Dispatching RPC", m.info.Username)
 	// retrieve the handler from the registry and return it
 	svcMap, ok := m.appHandlerRegistry[service]
 	if !ok {
@@ -308,14 +293,15 @@ func (m *NetworkManager) DispatchRPC(ctx context.Context, service api.AppLock, m
 	return handler(ctx, payload)
 }
 
-// InvokeRemote sends a single RPC over UDP and waits for a reply.
-func (m *NetworkManager) InvokeRemote(
+// InvokeRPC sends a single RPC over UDP and waits for a reply.
+func (m *NetworkManager) InvokeRPC(
 	ctx context.Context,
-	peerAddr string, // e.g. "1.2.3.4:6669"
+	peerAddr string,
 	service, method string,
-	req proto.Message,
-	resp proto.Message,
+	req, resp proto.Message,
 ) error {
+	log.Printf("[NetworkManager]:%v Invoking RPC on %v", m.info.Username, peerAddr)
+
 	// 1) Marshal the typed request
 	payload, err := proto.Marshal(req)
 	if err != nil {
@@ -326,8 +312,8 @@ func (m *NetworkManager) InvokeRemote(
 	envelope := &api.RPC{
 		Service: service,
 		Method:  method,
-		Sender:  m.info, // your local *api.Contact
-		Payload: payload,
+		Sender:  m.info,  // local node info
+		Payload: payload, // actual typed RPC for the service
 	}
 	data, err := proto.Marshal(envelope)
 	if err != nil {
@@ -369,5 +355,33 @@ func (m *NetworkManager) InvokeRemote(
 	if err := proto.Unmarshal(replyEnv.Payload, resp); err != nil {
 		return fmt.Errorf("unmarshal %s.%s response: %w", service, method, err)
 	}
+
+	// handle core services e.g. Kademlia routing
+	if service == "services.KademliaService" {
+		switch method {
+		case "Ping":
+			ack, ok := resp.(*services.ACK)
+			if !ok {
+				return fmt.Errorf("expected *services.ACK, got %T", resp)
+			}
+			m.lock.Lock()
+			defer m.lock.Unlock()
+			// record the Contact you just pinged
+			// we already know its network address is peerAddr
+			peer := ack.GetFrom()
+			m.peers[peer.Username] = peer
+			m.active[peer] = true
+
+			log.Println(peerAddr, m.router.RoutingTable.RoutingTableString())
+
+			// since we received an ack, add the peer to the routing table
+			m.router.RoutingTable.Update(ctx, peer)
+			log.Printf("[NetworkManager]:%v got %v.Ack@%v",
+				m.info.Username, service, ack.From.Username)
+			log.Println(m.router.RoutingTable.RoutingTableString())
+
+		}
+	}
+
 	return nil
 }

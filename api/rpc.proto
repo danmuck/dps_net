@@ -11,9 +11,10 @@ import "google/protobuf/timestamp.proto";
 // //
 message Contact {
   	bytes id = 1;
-  	string tcp_port = 2;
-  	string udp_port = 3;
-  	google.protobuf.Timestamp last_seen = 4;
+   	string username = 2;
+  	string tcp_port = 3;
+  	string udp_port = 4;
+  	google.protobuf.Timestamp last_seen = 5;
 }
 
 // ////

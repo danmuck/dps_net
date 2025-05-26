@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bytes"
 	context "context"
 	"testing"
 
@@ -117,5 +118,38 @@ func TestKademliaService_FindNode_Deterministic_FirstByte(t *testing.T) {
 		if got != w {
 			t.Errorf("node %d: got first-byte 0x%02x, want 0x%02x", i, got, w)
 		}
+	}
+}
+
+// TestKademliaService_Ping verifies that the Ping RPC echoes the payload
+// and updates the routing table with the sender contact.
+func TestKademliaService_Ping(t *testing.T) {
+	// 1) Create a local Contact and routing table
+	local := api.NewContact(make([]byte, api.KeyBytes), "127.0.0.1", "", "")
+	rt := routing.NewRoutingTable(local, 20, 3)
+	svc := NewKademliaService(rt)
+
+	// 2) Prepare a dummy peer contact and ping payload
+	peerID := make([]byte, api.KeyBytes)
+	peerID[0] = 0x01
+	peer := api.NewContact(peerID, "10.0.0.1", "", "")
+	payload := []byte("ping-data")
+
+	// 3) Call Ping handler
+	req := &PING{From: peer, Value: payload}
+	ack, err := svc.Ping(context.Background(), req)
+	if err != nil {
+		t.Fatalf("Ping RPC failed: %v", err)
+	}
+
+	// 4) Check that ACK echoes the payload
+	if !bytes.Equal(ack.Value, payload) {
+		t.Errorf("ACK value = %q, want %q", ack.Value, payload)
+	}
+
+	// 5) Routing table should now contain the peer
+	closest, _ := rt.FindClosestK(context.Background(), api.NodeID(peerID))
+	if len(closest) == 0 || !bytes.Equal(closest[0].GetId(), peerID) {
+		t.Errorf("routing table did not update with peer %x", peerID)
 	}
 }

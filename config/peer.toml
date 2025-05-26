@@ -1,10 +1,10 @@
-node_id = "6469727470696700000000000000000000000000"
-username = "dirtpig"
+node_id = "fafafafafafafa00000000000000000000000000"
+username = "friend"
 address = "localhost"
 k = 5
 alpha = 3
-grpc_port = 6668
-udp_port = 6669
+grpc_port = 6667
+udp_port = 6670
 timeout = "5s"
 
 [app_locks]

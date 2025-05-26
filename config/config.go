@@ -14,6 +14,7 @@ import (
 
 type Config struct {
 	NodeID         string            `toml:"node_id"`
+	Username       string            `toml:"username"`
 	Address        string            `toml:"address"`
 	K              int               `toml:"k"`
 	Alpha          int               `toml:"alpha"`
@@ -31,6 +32,7 @@ func Load(path string) (*Config, error) {
 	id := api.GenerateRandomNodeID()
 	cfg := &Config{
 		NodeID:         id.String(),
+		Username:       "dirtpig",
 		Address:        api.GetOutboundIP(),
 		K:              10,
 		Alpha:          3,

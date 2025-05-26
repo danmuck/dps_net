@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.29.3
-// source: rpc.proto
+// source: api/rpc.proto
 
 package api
 
@@ -125,5 +125,5 @@ var EndpointHandler_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc.proto",
+	Metadata: "api/rpc.proto",
 }

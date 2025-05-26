@@ -8,24 +8,8 @@ import (
 	"github.com/danmuck/dps_net/api"
 	"github.com/danmuck/dps_net/config"
 	"github.com/danmuck/dps_net/network"
+	"github.com/danmuck/dps_net/network/services"
 )
-
-// type Node struct {
-// 	info *api.Contact
-// 	net  network.NetworkManager
-
-// 	storage api.StorageInterface
-// 	cache   api.StorageInterface
-
-// 	lock sync.RWMutex
-// }
-
-// func NewNode(id []byte, address string) *Node {
-// 	n := &Node{
-// 		info: api.NewContact(id, address, "", ""),
-// 	}
-// 	return n
-// }
 
 // Node is the primary entrypoint to the P2P network.
 // It delegates routing and transport to the NetworkManager.
@@ -33,6 +17,7 @@ import (
 type Node struct {
 	ID      api.NodeID
 	Contact *api.Contact
+	cfg     *config.Config
 
 	mgr *network.NetworkManager
 
@@ -76,6 +61,7 @@ func NewNode(cfgPath string) (*Node, error) {
 			return ""
 		}(),
 	)
+	contact.UpdateUsername(cfg.Username)
 
 	// Initialize network manager with embedded routing and Kademlia service
 	nm, err := network.NewNetworkManager(contact, *cfg)
@@ -89,6 +75,7 @@ func NewNode(cfgPath string) (*Node, error) {
 	n := &Node{
 		ID:      nid,
 		Contact: contact,
+		cfg:     cfg,
 		mgr:     nm,
 		// storage implementations can be injected or defaulted here
 		// Storage: api.NewBoltStorage(),
@@ -106,10 +93,10 @@ func (n *Node) Start() error {
 	// 	return fmt.Errorf("start grpc: %w", err)
 	// }
 	// n.mgr.StartUDP()
-
+	//
+	n.mgr.Start()
 	// Bootstrap with configured peers
-	cfg, _ := config.Load("") // should reuse same cfg or store on Node
-	for _, peer := range cfg.BootstrapPeers {
+	for _, peer := range n.cfg.BootstrapPeers {
 		if err := n.Join(peer); err != nil {
 			fmt.Printf("warning: join %s: %v\n", peer, err)
 		}
@@ -119,21 +106,34 @@ func (n *Node) Start() error {
 
 // Stop gracefully shuts down networking
 func (n *Node) Stop() {
+	n.mgr.Shutdown()
 	n.cancel()
 }
 
 // Join sends a Ping RPC to integrate a peer into the routing table
 func (n *Node) Join(peerAddr string) error {
-	req := &api.RPC{
-		Service: "services.KademliaService",
-		Method:  "Ping",
-		Sender:  n.Contact,
-		Payload: nil,
+	// 1) Build the typed request
+	ping := &services.PING{
+		From:  n.Contact,
+		Value: nil, // or []byte whatever payload you want
 	}
-	var res api.RPC
-	if err := n.mgr.InvokeRemote(n.ctx, peerAddr, req.Service, req.Method, req, &res); err != nil {
+
+	// 2) Prepare the typed response holder
+	var ack services.ACK
+
+	// 3) InvokeRemote will marshal pingReq, wrap in api.RPC, send, then
+	//    unmarshal the inner ACK for you
+	if err := n.mgr.InvokeRPC(
+		n.ctx,
+		peerAddr,
+		"services.KademliaService", // service name
+		"Ping",                     // method name
+		ping,                       // typed request
+		&ack,                       // typed response
+	); err != nil {
 		return fmt.Errorf("ping %s: %w", peerAddr, err)
 	}
+
 	return nil
 }
 
@@ -171,7 +171,7 @@ func (n *Node) Get(key []byte) ([]byte, bool, error) {
 		}(),
 	}
 	var res api.RPC
-	if err := n.mgr.InvokeRemote(n.ctx /*peerAddr*/, string(n.Contact.GetId()), req.Service, req.Method, req, &res); err != nil {
+	if err := n.mgr.InvokeRPC(n.ctx /*peerAddr*/, string(n.Contact.GetId()), req.Service, req.Method, req, &res); err != nil {
 		return nil, false, fmt.Errorf("findvalue rpc: %w", err)
 	}
 	// unmarshal VALUE message from res.Payload… omitted

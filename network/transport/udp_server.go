@@ -31,21 +31,16 @@ func NewUDPServer(addr, port string, recv chan Packet) (*UDPServer, error) {
 		recv:    recv,
 	}
 
-	log.Printf("[NewUDPServer]: starting server on %s \n", u.address)
+	log.Printf("[NewUDPServer] %s \n", u.address)
 
-	// err = u.Start()
-	// if err != nil {
-	// 	return nil, err
-	// }
 	return u, nil
 }
 
 func (userv *UDPServer) Start() error {
-	log.Printf("[userv.Start()] starting")
+	log.Printf("[UDPServer] (%v) starting", userv.address.String())
 	ctx, cancel := context.WithCancel(context.Background())
 	userv.cancel = cancel
 	go func() {
-		defer close(userv.recv) // channel closed exactly once, by this goroutine
 		buf := make([]byte, 64<<10)
 		for {
 			select {
@@ -53,14 +48,14 @@ func (userv *UDPServer) Start() error {
 				return
 			default:
 				n, peer, err := userv.conn.ReadFromUDP(buf)
-				log.Printf("[userv.Start()] recv %d bytes from %s", n, peer)
+				log.Printf("[UDPServer] (%v) recv %d bytes from %s", userv.address.String(), n, peer)
 				if err != nil {
 					select {
 					// check ctx.Done(), bail out if canceled
 					case <-ctx.Done():
 						return
 					default:
-						log.Println("[userv.Start()] udp read:", err)
+						log.Printf("[UDPServer] (%v) udp read: %v", userv.address.String(), err)
 						continue
 					}
 				}
@@ -70,11 +65,11 @@ func (userv *UDPServer) Start() error {
 				// Unmarshal RPC
 				var rpc api.RPC
 				if err := proto.Unmarshal(data, &rpc); err != nil {
-					log.Println("[userv.Start()] invalid rpc:", err)
+					log.Printf("[UDPServer] (%v) invalid rpc: %v", userv.address.String(), err)
 					continue
 				}
-				log.Printf("[userv.Start()] parsed RPC – Service=%q Method=%q Sender=%v",
-					rpc.Service, rpc.Method, rpc.Sender)
+				log.Printf("[UDPServer] (%v) parsed RPC – Service=%q Method=%q Sender=%v",
+					userv.address.String(), rpc.Service, rpc.Method, rpc.Sender)
 
 				// TODO: ?? verify Contact
 
@@ -84,6 +79,10 @@ func (userv *UDPServer) Start() error {
 					if err != nil {
 						return err
 					}
+					target := peer.IP.String() + ":" + rpc.Sender.GetUdpPort()
+					log.Printf("[UDPServer] writing response to %v : %v.%v@%v",
+						target, res.Service, res.Method, res.Sender.Username)
+
 					_, err = userv.conn.WriteToUDP(out, peer)
 					return err
 				}
@@ -91,11 +90,12 @@ func (userv *UDPServer) Start() error {
 				pkt := Packet{
 					Ctx:     ctx,
 					RPC:     &rpc,
-					Peer:    rpc.Sender,
+					Sender:  rpc.Sender,
 					Network: "udp",
 					Reply:   replyFn,
 				}
-				userv.recv <- pkt // channel write is safe
+				log.Printf("[UDPServer] (%v) pushing packet onto network", userv.address.String())
+				userv.recv <- pkt
 			}
 		}
 	}()
