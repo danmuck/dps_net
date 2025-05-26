@@ -1,9 +1,9 @@
 package routing
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -59,14 +59,18 @@ func (rt *RoutingTable) Update(ctx context.Context, c *api.Contact) error {
 	otherID := api.SliceToNodeID(c.GetId())
 	for {
 		rt.lock.Lock()
+		if len(rt.buckets) != 0 && bytes.Equal(localID[:], otherID[:]) {
+			rt.lock.Unlock()
+			return nil
+		}
 
 		bucketIndex := api.SharedPrefixLength(localID, otherID)
 		size := len(rt.buckets)
-		fmt.Fprintf(os.Stderr, "[rt.Update(1)] Inserting-> index: %v size: %v \n", bucketIndex, size)
-		if size == 0 || api.SliceCompare(c.GetId(), rt.local.GetId()) {
+		// log.Printf("[rt.Update(1)] Inserting-> index: %v size: %v \n", bucketIndex, size)
+		if size == 0 && bytes.Equal(c.GetId(), rt.local.GetId()) {
 			// if size == 0 || c.ID() == rt.local.ID() {
 			bucket := newBucket(rt, 0)
-			fmt.Fprintf(os.Stderr, "Inserting Local: %08b \n", otherID)
+			// log.Printf("[rt.Update()] inserting local: \n    %08b \n", otherID)
 			bucket.Insert(c)
 			rt.buckets = append(rt.buckets, bucket)
 			rt.lock.Unlock()
@@ -78,7 +82,7 @@ func (rt *RoutingTable) Update(ctx context.Context, c *api.Contact) error {
 		}
 
 		bucket := rt.buckets[bucketIndex]
-		fmt.Fprintf(os.Stderr, "[rt.Update(2)] Inserting-> index: %v size: %v \n", bucketIndex, size)
+		// log.Printf("[rt.Update(2)] Inserting-> index: %v size: %v \n", bucketIndex, size)
 		// if this is the deepest bucket, we may need to split it
 		if bucketIndex == size-1 && bucket.depth < api.KeyBits-1 && bucket.isFull {
 			left, right := bucket.Split()
@@ -87,13 +91,13 @@ func (rt *RoutingTable) Update(ctx context.Context, c *api.Contact) error {
 				return fmt.Errorf("[no split] bucket does not contain the local node")
 			}
 			rt.buckets = append(rt.buckets[:bucketIndex], left, right)
-			fmt.Fprintf(os.Stderr, "[rt.Update()] Left: %v Right: %v \n", left.peers, right.peers)
+			// log.Printf("[rt.Update()] Left: %v Right: %v \n", left.peers, right.peers)
 			rt.lock.Unlock()
 			continue
 		}
 
 		rt.lock.Unlock()
-		fmt.Fprintf(os.Stderr, "Inserting Other: %08b \n", otherID)
+		// log.Printf("[rt.Update()] inserting other: \n    %08b \n", otherID)
 		bucket.Insert(c)
 		return nil
 	}
@@ -169,11 +173,6 @@ func (rt *RoutingTable) RoutingTableString() string {
 	sb.WriteString(fmt.Sprintf("Routing table: [%08b]\n  %d buckets: \n", rt.local.GetId(), len(rt.buckets)))
 	for _, b := range rt.buckets {
 		sb.WriteString(b.PrintString())
-		// sb.WriteString(fmt.Sprintf("Bucket %2d (depth %2d): %d peers \n",
-		// 	i, b.depth, len(b.peers)))
-		// for _, c := range b.peers {
-		// 	sb.WriteString(fmt.Sprintf("  - %x\n", c.ID()))
-		// }
 	}
 	return sb.String()
 }

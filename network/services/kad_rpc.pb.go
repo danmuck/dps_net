@@ -22,9 +22,9 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ////
-// Request/Response Messages
-// //
+// ----------------------------------------------------------------
+// Messages
+// ----------------------------------------------------------------
 type PING struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	From          *api.Contact           `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
@@ -517,203 +517,6 @@ func (x *REFRESH) GetKey() []byte {
 	return nil
 }
 
-// ////
-// Top-level RPC
-// //
-type Kademlia_RPC struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Types that are valid to be assigned to Payload:
-	//
-	//	*Kademlia_RPC_Ping
-	//	*Kademlia_RPC_Ack
-	//	*Kademlia_RPC_Store
-	//	*Kademlia_RPC_Delete
-	//	*Kademlia_RPC_FindNode
-	//	*Kademlia_RPC_FindValue
-	//	*Kademlia_RPC_Nodes
-	//	*Kademlia_RPC_Value
-	//	*Kademlia_RPC_Refresh
-	Payload       isKademlia_RPC_Payload `protobuf_oneof:"payload"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Kademlia_RPC) Reset() {
-	*x = Kademlia_RPC{}
-	mi := &file_network_services_kad_rpc_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Kademlia_RPC) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Kademlia_RPC) ProtoMessage() {}
-
-func (x *Kademlia_RPC) ProtoReflect() protoreflect.Message {
-	mi := &file_network_services_kad_rpc_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Kademlia_RPC.ProtoReflect.Descriptor instead.
-func (*Kademlia_RPC) Descriptor() ([]byte, []int) {
-	return file_network_services_kad_rpc_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *Kademlia_RPC) GetPayload() isKademlia_RPC_Payload {
-	if x != nil {
-		return x.Payload
-	}
-	return nil
-}
-
-func (x *Kademlia_RPC) GetPing() *PING {
-	if x != nil {
-		if x, ok := x.Payload.(*Kademlia_RPC_Ping); ok {
-			return x.Ping
-		}
-	}
-	return nil
-}
-
-func (x *Kademlia_RPC) GetAck() *ACK {
-	if x != nil {
-		if x, ok := x.Payload.(*Kademlia_RPC_Ack); ok {
-			return x.Ack
-		}
-	}
-	return nil
-}
-
-func (x *Kademlia_RPC) GetStore() *STORE {
-	if x != nil {
-		if x, ok := x.Payload.(*Kademlia_RPC_Store); ok {
-			return x.Store
-		}
-	}
-	return nil
-}
-
-func (x *Kademlia_RPC) GetDelete() *DELETE {
-	if x != nil {
-		if x, ok := x.Payload.(*Kademlia_RPC_Delete); ok {
-			return x.Delete
-		}
-	}
-	return nil
-}
-
-func (x *Kademlia_RPC) GetFindNode() *FIND_NODE {
-	if x != nil {
-		if x, ok := x.Payload.(*Kademlia_RPC_FindNode); ok {
-			return x.FindNode
-		}
-	}
-	return nil
-}
-
-func (x *Kademlia_RPC) GetFindValue() *FIND_VALUE {
-	if x != nil {
-		if x, ok := x.Payload.(*Kademlia_RPC_FindValue); ok {
-			return x.FindValue
-		}
-	}
-	return nil
-}
-
-func (x *Kademlia_RPC) GetNodes() *NODES {
-	if x != nil {
-		if x, ok := x.Payload.(*Kademlia_RPC_Nodes); ok {
-			return x.Nodes
-		}
-	}
-	return nil
-}
-
-func (x *Kademlia_RPC) GetValue() *VALUE {
-	if x != nil {
-		if x, ok := x.Payload.(*Kademlia_RPC_Value); ok {
-			return x.Value
-		}
-	}
-	return nil
-}
-
-func (x *Kademlia_RPC) GetRefresh() *REFRESH {
-	if x != nil {
-		if x, ok := x.Payload.(*Kademlia_RPC_Refresh); ok {
-			return x.Refresh
-		}
-	}
-	return nil
-}
-
-type isKademlia_RPC_Payload interface {
-	isKademlia_RPC_Payload()
-}
-
-type Kademlia_RPC_Ping struct {
-	Ping *PING `protobuf:"bytes,1,opt,name=ping,proto3,oneof"`
-}
-
-type Kademlia_RPC_Ack struct {
-	Ack *ACK `protobuf:"bytes,2,opt,name=ack,proto3,oneof"`
-}
-
-type Kademlia_RPC_Store struct {
-	Store *STORE `protobuf:"bytes,3,opt,name=store,proto3,oneof"`
-}
-
-type Kademlia_RPC_Delete struct {
-	Delete *DELETE `protobuf:"bytes,4,opt,name=delete,proto3,oneof"`
-}
-
-type Kademlia_RPC_FindNode struct {
-	FindNode *FIND_NODE `protobuf:"bytes,5,opt,name=find_node,json=findNode,proto3,oneof"`
-}
-
-type Kademlia_RPC_FindValue struct {
-	FindValue *FIND_VALUE `protobuf:"bytes,6,opt,name=find_value,json=findValue,proto3,oneof"`
-}
-
-type Kademlia_RPC_Nodes struct {
-	Nodes *NODES `protobuf:"bytes,7,opt,name=nodes,proto3,oneof"`
-}
-
-type Kademlia_RPC_Value struct {
-	Value *VALUE `protobuf:"bytes,8,opt,name=value,proto3,oneof"`
-}
-
-type Kademlia_RPC_Refresh struct {
-	Refresh *REFRESH `protobuf:"bytes,9,opt,name=refresh,proto3,oneof"`
-}
-
-func (*Kademlia_RPC_Ping) isKademlia_RPC_Payload() {}
-
-func (*Kademlia_RPC_Ack) isKademlia_RPC_Payload() {}
-
-func (*Kademlia_RPC_Store) isKademlia_RPC_Payload() {}
-
-func (*Kademlia_RPC_Delete) isKademlia_RPC_Payload() {}
-
-func (*Kademlia_RPC_FindNode) isKademlia_RPC_Payload() {}
-
-func (*Kademlia_RPC_FindValue) isKademlia_RPC_Payload() {}
-
-func (*Kademlia_RPC_Nodes) isKademlia_RPC_Payload() {}
-
-func (*Kademlia_RPC_Value) isKademlia_RPC_Payload() {}
-
-func (*Kademlia_RPC_Refresh) isKademlia_RPC_Payload() {}
-
 var File_network_services_kad_rpc_proto protoreflect.FileDescriptor
 
 const file_network_services_kad_rpc_proto_rawDesc = "" +
@@ -749,19 +552,14 @@ const file_network_services_kad_rpc_proto_rawDesc = "" +
 	"\x05nodes\x18\x04 \x03(\v2\f.api.ContactR\x05nodes\"=\n" +
 	"\aREFRESH\x12 \n" +
 	"\x04from\x18\x01 \x01(\v2\f.api.ContactR\x04from\x12\x10\n" +
-	"\x03key\x18\x02 \x01(\fR\x03key\"\xa3\x03\n" +
-	"\fKademlia_RPC\x12$\n" +
-	"\x04ping\x18\x01 \x01(\v2\x0e.services.PINGH\x00R\x04ping\x12!\n" +
-	"\x03ack\x18\x02 \x01(\v2\r.services.ACKH\x00R\x03ack\x12'\n" +
-	"\x05store\x18\x03 \x01(\v2\x0f.services.STOREH\x00R\x05store\x12*\n" +
-	"\x06delete\x18\x04 \x01(\v2\x10.services.DELETEH\x00R\x06delete\x122\n" +
-	"\tfind_node\x18\x05 \x01(\v2\x13.services.FIND_NODEH\x00R\bfindNode\x125\n" +
-	"\n" +
-	"find_value\x18\x06 \x01(\v2\x14.services.FIND_VALUEH\x00R\tfindValue\x12'\n" +
-	"\x05nodes\x18\a \x01(\v2\x0f.services.NODESH\x00R\x05nodes\x12'\n" +
-	"\x05value\x18\b \x01(\v2\x0f.services.VALUEH\x00R\x05value\x12-\n" +
-	"\arefresh\x18\t \x01(\v2\x11.services.REFRESHH\x00R\arefreshB\t\n" +
-	"\apayloadB-Z+github.com/danmuck/dps_net/network/servicesb\x06proto3"
+	"\x03key\x18\x02 \x01(\fR\x03key2\x9f\x02\n" +
+	"\x0fKademliaService\x12%\n" +
+	"\x04Ping\x12\x0e.services.PING\x1a\r.services.ACK\x12'\n" +
+	"\x05Store\x12\x0f.services.STORE\x1a\r.services.ACK\x12)\n" +
+	"\x06Delete\x12\x10.services.DELETE\x1a\r.services.ACK\x120\n" +
+	"\bFindNode\x12\x13.services.FIND_NODE\x1a\x0f.services.NODES\x122\n" +
+	"\tFindValue\x12\x14.services.FIND_VALUE\x1a\x0f.services.VALUE\x12+\n" +
+	"\aRefresh\x12\x11.services.REFRESH\x1a\r.services.ACKB-Z+github.com/danmuck/dps_net/network/servicesb\x06proto3"
 
 var (
 	file_network_services_kad_rpc_proto_rawDescOnce sync.Once
@@ -775,46 +573,48 @@ func file_network_services_kad_rpc_proto_rawDescGZIP() []byte {
 	return file_network_services_kad_rpc_proto_rawDescData
 }
 
-var file_network_services_kad_rpc_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_network_services_kad_rpc_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_network_services_kad_rpc_proto_goTypes = []any{
-	(*PING)(nil),         // 0: services.PING
-	(*ACK)(nil),          // 1: services.ACK
-	(*STORE)(nil),        // 2: services.STORE
-	(*DELETE)(nil),       // 3: services.DELETE
-	(*FIND_NODE)(nil),    // 4: services.FIND_NODE
-	(*FIND_VALUE)(nil),   // 5: services.FIND_VALUE
-	(*NODES)(nil),        // 6: services.NODES
-	(*VALUE)(nil),        // 7: services.VALUE
-	(*REFRESH)(nil),      // 8: services.REFRESH
-	(*Kademlia_RPC)(nil), // 9: services.Kademlia_RPC
-	(*api.Contact)(nil),  // 10: api.Contact
+	(*PING)(nil),        // 0: services.PING
+	(*ACK)(nil),         // 1: services.ACK
+	(*STORE)(nil),       // 2: services.STORE
+	(*DELETE)(nil),      // 3: services.DELETE
+	(*FIND_NODE)(nil),   // 4: services.FIND_NODE
+	(*FIND_VALUE)(nil),  // 5: services.FIND_VALUE
+	(*NODES)(nil),       // 6: services.NODES
+	(*VALUE)(nil),       // 7: services.VALUE
+	(*REFRESH)(nil),     // 8: services.REFRESH
+	(*api.Contact)(nil), // 9: api.Contact
 }
 var file_network_services_kad_rpc_proto_depIdxs = []int32{
-	10, // 0: services.PING.from:type_name -> api.Contact
-	10, // 1: services.ACK.from:type_name -> api.Contact
-	10, // 2: services.STORE.from:type_name -> api.Contact
-	10, // 3: services.DELETE.from:type_name -> api.Contact
-	10, // 4: services.FIND_NODE.from:type_name -> api.Contact
-	10, // 5: services.FIND_VALUE.from:type_name -> api.Contact
-	10, // 6: services.NODES.from:type_name -> api.Contact
-	10, // 7: services.NODES.nodes:type_name -> api.Contact
-	10, // 8: services.VALUE.from:type_name -> api.Contact
-	10, // 9: services.VALUE.nodes:type_name -> api.Contact
-	10, // 10: services.REFRESH.from:type_name -> api.Contact
-	0,  // 11: services.Kademlia_RPC.ping:type_name -> services.PING
-	1,  // 12: services.Kademlia_RPC.ack:type_name -> services.ACK
-	2,  // 13: services.Kademlia_RPC.store:type_name -> services.STORE
-	3,  // 14: services.Kademlia_RPC.delete:type_name -> services.DELETE
-	4,  // 15: services.Kademlia_RPC.find_node:type_name -> services.FIND_NODE
-	5,  // 16: services.Kademlia_RPC.find_value:type_name -> services.FIND_VALUE
-	6,  // 17: services.Kademlia_RPC.nodes:type_name -> services.NODES
-	7,  // 18: services.Kademlia_RPC.value:type_name -> services.VALUE
-	8,  // 19: services.Kademlia_RPC.refresh:type_name -> services.REFRESH
-	20, // [20:20] is the sub-list for method output_type
-	20, // [20:20] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	9,  // 0: services.PING.from:type_name -> api.Contact
+	9,  // 1: services.ACK.from:type_name -> api.Contact
+	9,  // 2: services.STORE.from:type_name -> api.Contact
+	9,  // 3: services.DELETE.from:type_name -> api.Contact
+	9,  // 4: services.FIND_NODE.from:type_name -> api.Contact
+	9,  // 5: services.FIND_VALUE.from:type_name -> api.Contact
+	9,  // 6: services.NODES.from:type_name -> api.Contact
+	9,  // 7: services.NODES.nodes:type_name -> api.Contact
+	9,  // 8: services.VALUE.from:type_name -> api.Contact
+	9,  // 9: services.VALUE.nodes:type_name -> api.Contact
+	9,  // 10: services.REFRESH.from:type_name -> api.Contact
+	0,  // 11: services.KademliaService.Ping:input_type -> services.PING
+	2,  // 12: services.KademliaService.Store:input_type -> services.STORE
+	3,  // 13: services.KademliaService.Delete:input_type -> services.DELETE
+	4,  // 14: services.KademliaService.FindNode:input_type -> services.FIND_NODE
+	5,  // 15: services.KademliaService.FindValue:input_type -> services.FIND_VALUE
+	8,  // 16: services.KademliaService.Refresh:input_type -> services.REFRESH
+	1,  // 17: services.KademliaService.Ping:output_type -> services.ACK
+	1,  // 18: services.KademliaService.Store:output_type -> services.ACK
+	1,  // 19: services.KademliaService.Delete:output_type -> services.ACK
+	6,  // 20: services.KademliaService.FindNode:output_type -> services.NODES
+	7,  // 21: services.KademliaService.FindValue:output_type -> services.VALUE
+	1,  // 22: services.KademliaService.Refresh:output_type -> services.ACK
+	17, // [17:23] is the sub-list for method output_type
+	11, // [11:17] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_network_services_kad_rpc_proto_init() }
@@ -822,26 +622,15 @@ func file_network_services_kad_rpc_proto_init() {
 	if File_network_services_kad_rpc_proto != nil {
 		return
 	}
-	file_network_services_kad_rpc_proto_msgTypes[9].OneofWrappers = []any{
-		(*Kademlia_RPC_Ping)(nil),
-		(*Kademlia_RPC_Ack)(nil),
-		(*Kademlia_RPC_Store)(nil),
-		(*Kademlia_RPC_Delete)(nil),
-		(*Kademlia_RPC_FindNode)(nil),
-		(*Kademlia_RPC_FindValue)(nil),
-		(*Kademlia_RPC_Nodes)(nil),
-		(*Kademlia_RPC_Value)(nil),
-		(*Kademlia_RPC_Refresh)(nil),
-	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_network_services_kad_rpc_proto_rawDesc), len(file_network_services_kad_rpc_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   9,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_network_services_kad_rpc_proto_goTypes,
 		DependencyIndexes: file_network_services_kad_rpc_proto_depIdxs,

@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v5.29.3
-// source: api/rpc.proto
+// source: rpc.proto
 
 package api
 
@@ -28,8 +28,8 @@ const (
 type Contact struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	TcpAddress    string                 `protobuf:"bytes,2,opt,name=tcp_address,json=tcpAddress,proto3" json:"tcp_address,omitempty"`
-	UdpAddress    string                 `protobuf:"bytes,3,opt,name=udp_address,json=udpAddress,proto3" json:"udp_address,omitempty"`
+	TcpPort       string                 `protobuf:"bytes,2,opt,name=tcp_port,json=tcpPort,proto3" json:"tcp_port,omitempty"`
+	UdpPort       string                 `protobuf:"bytes,3,opt,name=udp_port,json=udpPort,proto3" json:"udp_port,omitempty"`
 	LastSeen      *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=last_seen,json=lastSeen,proto3" json:"last_seen,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -37,7 +37,7 @@ type Contact struct {
 
 func (x *Contact) Reset() {
 	*x = Contact{}
-	mi := &file_api_rpc_proto_msgTypes[0]
+	mi := &file_rpc_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -49,7 +49,7 @@ func (x *Contact) String() string {
 func (*Contact) ProtoMessage() {}
 
 func (x *Contact) ProtoReflect() protoreflect.Message {
-	mi := &file_api_rpc_proto_msgTypes[0]
+	mi := &file_rpc_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -62,7 +62,7 @@ func (x *Contact) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Contact.ProtoReflect.Descriptor instead.
 func (*Contact) Descriptor() ([]byte, []int) {
-	return file_api_rpc_proto_rawDescGZIP(), []int{0}
+	return file_rpc_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Contact) GetId() []byte {
@@ -72,16 +72,16 @@ func (x *Contact) GetId() []byte {
 	return nil
 }
 
-func (x *Contact) GetTcpAddress() string {
+func (x *Contact) GetTcpPort() string {
 	if x != nil {
-		return x.TcpAddress
+		return x.TcpPort
 	}
 	return ""
 }
 
-func (x *Contact) GetUdpAddress() string {
+func (x *Contact) GetUdpPort() string {
 	if x != nil {
-		return x.UdpAddress
+		return x.UdpPort
 	}
 	return ""
 }
@@ -108,7 +108,7 @@ type RPC struct {
 
 func (x *RPC) Reset() {
 	*x = RPC{}
-	mi := &file_api_rpc_proto_msgTypes[1]
+	mi := &file_rpc_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -120,7 +120,7 @@ func (x *RPC) String() string {
 func (*RPC) ProtoMessage() {}
 
 func (x *RPC) ProtoReflect() protoreflect.Message {
-	mi := &file_api_rpc_proto_msgTypes[1]
+	mi := &file_rpc_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -133,7 +133,7 @@ func (x *RPC) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RPC.ProtoReflect.Descriptor instead.
 func (*RPC) Descriptor() ([]byte, []int) {
-	return file_api_rpc_proto_rawDescGZIP(), []int{1}
+	return file_rpc_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *RPC) GetService() string {
@@ -164,17 +164,15 @@ func (x *RPC) GetPayload() []byte {
 	return nil
 }
 
-var File_api_rpc_proto protoreflect.FileDescriptor
+var File_rpc_proto protoreflect.FileDescriptor
 
-const file_api_rpc_proto_rawDesc = "" +
+const file_rpc_proto_rawDesc = "" +
 	"\n" +
-	"\rapi/rpc.proto\x12\x03api\x1a\x1fgoogle/protobuf/timestamp.proto\"\x94\x01\n" +
+	"\trpc.proto\x12\x03api\x1a\x1fgoogle/protobuf/timestamp.proto\"\x88\x01\n" +
 	"\aContact\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1f\n" +
-	"\vtcp_address\x18\x02 \x01(\tR\n" +
-	"tcpAddress\x12\x1f\n" +
-	"\vudp_address\x18\x03 \x01(\tR\n" +
-	"udpAddress\x127\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x19\n" +
+	"\btcp_port\x18\x02 \x01(\tR\atcpPort\x12\x19\n" +
+	"\budp_port\x18\x03 \x01(\tR\audpPort\x127\n" +
 	"\tlast_seen\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\blastSeen\"w\n" +
 	"\x03RPC\x12\x18\n" +
 	"\aservice\x18\x01 \x01(\tR\aservice\x12\x16\n" +
@@ -185,24 +183,24 @@ const file_api_rpc_proto_rawDesc = "" +
 	"\x04Call\x12\b.api.RPC\x1a\b.api.RPCB Z\x1egithub.com/danmuck/dps_net/apib\x06proto3"
 
 var (
-	file_api_rpc_proto_rawDescOnce sync.Once
-	file_api_rpc_proto_rawDescData []byte
+	file_rpc_proto_rawDescOnce sync.Once
+	file_rpc_proto_rawDescData []byte
 )
 
-func file_api_rpc_proto_rawDescGZIP() []byte {
-	file_api_rpc_proto_rawDescOnce.Do(func() {
-		file_api_rpc_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_rpc_proto_rawDesc), len(file_api_rpc_proto_rawDesc)))
+func file_rpc_proto_rawDescGZIP() []byte {
+	file_rpc_proto_rawDescOnce.Do(func() {
+		file_rpc_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_rpc_proto_rawDesc), len(file_rpc_proto_rawDesc)))
 	})
-	return file_api_rpc_proto_rawDescData
+	return file_rpc_proto_rawDescData
 }
 
-var file_api_rpc_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_api_rpc_proto_goTypes = []any{
+var file_rpc_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_rpc_proto_goTypes = []any{
 	(*Contact)(nil),               // 0: api.Contact
 	(*RPC)(nil),                   // 1: api.RPC
 	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
 }
-var file_api_rpc_proto_depIdxs = []int32{
+var file_rpc_proto_depIdxs = []int32{
 	2, // 0: api.Contact.last_seen:type_name -> google.protobuf.Timestamp
 	0, // 1: api.RPC.sender:type_name -> api.Contact
 	1, // 2: api.EndpointHandler.Call:input_type -> api.RPC
@@ -214,26 +212,26 @@ var file_api_rpc_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_api_rpc_proto_init() }
-func file_api_rpc_proto_init() {
-	if File_api_rpc_proto != nil {
+func init() { file_rpc_proto_init() }
+func file_rpc_proto_init() {
+	if File_rpc_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_rpc_proto_rawDesc), len(file_api_rpc_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_rpc_proto_rawDesc), len(file_rpc_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_api_rpc_proto_goTypes,
-		DependencyIndexes: file_api_rpc_proto_depIdxs,
-		MessageInfos:      file_api_rpc_proto_msgTypes,
+		GoTypes:           file_rpc_proto_goTypes,
+		DependencyIndexes: file_rpc_proto_depIdxs,
+		MessageInfos:      file_rpc_proto_msgTypes,
 	}.Build()
-	File_api_rpc_proto = out.File
-	file_api_rpc_proto_goTypes = nil
-	file_api_rpc_proto_depIdxs = nil
+	File_rpc_proto = out.File
+	file_rpc_proto_goTypes = nil
+	file_rpc_proto_depIdxs = nil
 }

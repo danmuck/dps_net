@@ -2,7 +2,6 @@ package routing
 
 import (
 	"fmt"
-	"os"
 	"slices"
 	"sort"
 	"sync"
@@ -128,7 +127,7 @@ func (b *kBucket) Split() (*kBucket, *kBucket) {
 		return b, nil
 	}
 	localID := api.SliceToNodeID(b.router.local.GetId())
-	fmt.Fprintf(os.Stderr, "[bucket.Split()] Splitting Bucket: %v \n", b.PrintString())
+	// fmt.Fprintf(os.Stderr, "[bucket.Split()] Splitting Bucket: %v \n", b.PrintString())
 
 	left := newBucket(b.router, b.depth)
 	right := newBucket(b.router, b.depth+1)
@@ -136,14 +135,14 @@ func (b *kBucket) Split() (*kBucket, *kBucket) {
 	for _, c := range b.peers {
 		id := api.SliceToNodeID(c.GetId())
 		depth := api.SharedPrefixLength(localID, id)
-		fmt.Fprintf(os.Stderr, "[bucket.Split()] Depth: %v for %08b \n", depth, id)
+		// fmt.Fprintf(os.Stderr, "[bucket.Split()] Depth: %v for %08b \n", depth, id)
 
 		if depth == b.depth {
-			fmt.Fprintf(os.Stderr, "[bucket.Split()] Insert Left: %08b \n", id)
+			// fmt.Fprintf(os.Stderr, "[bucket.Split()] Insert Left: %08b \n", id)
 			// if peer belongs in the current bucket, place it there
 			left.peers = append(left.peers, c)
 		} else {
-			fmt.Fprintf(os.Stderr, "[bucket.Split()] Insert Right: %08b \n", id)
+			// fmt.Fprintf(os.Stderr, "[bucket.Split()] Insert Right: %08b \n", id)
 			// otherwise send it forward to find its natural bucket
 			right.peers = append(right.peers, c)
 		}

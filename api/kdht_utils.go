@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log"
 
 	"golang.org/x/crypto/blake2b"
 )
@@ -38,10 +39,13 @@ func (n *NodeID) String() string {
 	return hex.EncodeToString(n[:])
 }
 
+// ////
 // Application Hash for version integrity
 //
 //	-- AppLock used for running different instances of an app/plugin
 //		ie. Hash the AppID with an access key
+//
+// //
 type AppID [ApplicationIDBytes]byte
 type AppLock [ApplicationIDBytes]byte
 
@@ -64,8 +68,22 @@ func SliceToNodeID(data []byte) NodeID {
 	return id
 }
 
+// NodeIDFromString parses a hex string into a NodeID ([KeyBytes]byte).
+func StringToNodeID(s string) (NodeID, error) {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return NodeID{}, fmt.Errorf("invalid hex NodeID %q: %w", s, err)
+	}
+	if len(b) != KeyBytes {
+		return NodeID{}, fmt.Errorf("wrong length: got %d bytes, want %d", len(b), KeyBytes)
+	}
+	var id NodeID
+	copy(id[:], b)
+	return id, nil
+}
+
 func NodeIDToSlice(id NodeID) ([]byte, error) {
-	var b []byte
+	var b []byte = make([]byte, len(id))
 	len := copy(b, id[:])
 	if len != KeyBytes {
 		return nil, fmt.Errorf("expected %d bytes, got %d", KeyBytes, len)
@@ -95,6 +113,15 @@ func SliceToAppLock(data []byte) (AppLock, error) {
 	var id AppLock
 	copy(id[:], data)
 	return id, nil
+}
+
+func AppLockToSlice(id AppLock) []byte {
+	var b []byte = make([]byte, len(id))
+	len := copy(b, id[:])
+	if len != ApplicationIDBytes {
+		log.Fatalf("expected %d bytes, got %d", ApplicationIDBytes, len)
+	}
+	return b
 }
 
 // ////
