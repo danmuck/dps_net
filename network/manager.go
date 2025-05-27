@@ -291,7 +291,9 @@ func (m *NetworkManager) Lookup(ctx context.Context, target api.NodeID) ([]*api.
 	var prevFurthest api.NodeID
 
 	for {
-
+		if len(shortlist) == 0 {
+			return nil, nil
+		}
 		// sort & truncate to k
 		sort.Slice(shortlist, func(i, j int) bool {
 			return api.CompareXorDistance(

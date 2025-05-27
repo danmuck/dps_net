@@ -141,21 +141,21 @@ func (n *Node) Ping(peerAddr string) error {
 //  1. Pings the bootstrap node
 //  2. Asks it for the k closest nodes to you
 //  3. Pings each of those to fill your buckets
-func (n *Node) Join(bootstrapAddr string) error {
+func (n *Node) Join(bootstrapUDPAddr string) error {
 	// 0) ensure the bootstrap isn’t yourself
-	if bootstrapAddr == n.Contact.GetUDPAddress() {
+	if bootstrapUDPAddr == n.Contact.GetUDPAddress() {
 		return fmt.Errorf("cannot bootstrap to self")
 	}
 
 	// 1) Ping the bootstrap
-	if err := n.Ping(bootstrapAddr); err != nil {
-		return fmt.Errorf("cannot reach bootstrap %s: %w", bootstrapAddr, err)
+	if err := n.Ping(bootstrapUDPAddr); err != nil {
+		return fmt.Errorf("cannot reach bootstrap %s: %w", bootstrapUDPAddr, err)
 	}
 
 	// 2) Find the k closest nodes to *your* own ID
 	peers, err := n.mgr.Lookup(n.ctx, n.ID)
 	if err != nil {
-		return fmt.Errorf("bootstrap Lookup via %s failed: %w", bootstrapAddr, err)
+		return fmt.Errorf("bootstrap Lookup via %s failed: %w", bootstrapUDPAddr, err)
 	}
 	if len(peers) == 0 {
 		// It’s not necessarily an error—if k=1 and only bootstrap exists, you’re done.
@@ -167,7 +167,7 @@ func (n *Node) Join(bootstrapAddr string) error {
 	for _, peer := range peers {
 		addr := peer.GetAddress() + ":" + peer.GetUdpPort()
 		// avoid pinging the bootstrap twice
-		if addr == bootstrapAddr || addr == n.Contact.GetUDPAddress() {
+		if addr == bootstrapUDPAddr || addr == n.Contact.GetUDPAddress() {
 			continue
 		}
 		wg.Add(1)
