@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+  client:
+    build:
+      context: .
+      dockerfile: cmd/test_client/Dockerfile
+    # mount your code & config if you want to tweak without rebuilding
+    # volumes:
+    #   - .:/app
+    #   - ./config:/app/config:ro
+
+    # map the client’s UDP & TCP port(s) out to your Mac
+    ports:
+      - "6669:6669/udp"
+      - "6669:6669"
+
+    # keep stdin/tty open so you get the prompt
+    stdin_open: true
+    tty: true
