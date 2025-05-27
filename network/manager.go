@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-	"net"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -15,7 +15,6 @@ import (
 	"github.com/danmuck/dps_net/api"
 	"github.com/danmuck/dps_net/config"
 	"github.com/danmuck/dps_net/network/routing"
-	"github.com/danmuck/dps_net/network/services"
 	"github.com/danmuck/dps_net/network/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
@@ -31,9 +30,9 @@ type RPC_Handler func(ctx context.Context, payload []byte) ([]byte, error)
 // Network Manager handles all network traffic
 // //
 type NetworkManager struct {
-	nodeID    api.NodeID                    // local nodeID
-	localAddr string                        // local network address <ip:port>
-	router    *services.KademliaServiceImpl // p2p network routing table
+	nodeID    api.NodeID            // local nodeID
+	localAddr string                // local network address <ip:port>
+	router    *routing.RoutingTable // p2p network routing table
 	info      *api.Contact
 
 	receiver chan transport.Packet
@@ -42,8 +41,10 @@ type NetworkManager struct {
 
 	peers              map[string]*api.Contact                // username -> contact
 	active             map[*api.Contact]bool                  // contact -> isActive
+	trusted            map[string]string                      // TODO: username -> trust key
 	appLocks           map[string]api.AppLock                 // appID -> appLock
 	appHandlerRegistry map[api.AppLock]map[string]RPC_Handler // name -> rpc name -> handler
+	cfg                *config.Config
 
 	lock sync.RWMutex
 }
@@ -53,15 +54,11 @@ type NetworkManager struct {
 // //
 func NewNetworkManager(local *api.Contact, cfg config.Config) (*NetworkManager, error) {
 
-	// initialize local Contact info
-	// local := api.NewContact(id[:], cfg.Address, tcpPort, udpPort)
 	nm := &NetworkManager{
 		nodeID:    local.ID(),
-		localAddr: cfg.Address,
-		router: services.NewKademliaService(
-			routing.NewRoutingTable(local, cfg.K, cfg.Alpha),
-		),
-		info: local,
+		localAddr: local.GetAddress(),
+		router:    routing.NewRoutingTable(local, cfg.K, cfg.Alpha),
+		info:      local,
 
 		receiver: nil,
 		udpServ:  nil,
@@ -71,6 +68,7 @@ func NewNetworkManager(local *api.Contact, cfg config.Config) (*NetworkManager, 
 		active:             make(map[*api.Contact]bool),
 		appLocks:           make(map[string]api.AppLock),
 		appHandlerRegistry: make(map[api.AppLock]map[string]RPC_Handler),
+		cfg:                &cfg,
 	}
 
 	// add known apps by Lock
@@ -92,7 +90,7 @@ func NewNetworkManager(local *api.Contact, cfg config.Config) (*NetworkManager, 
 		nm.appLocks[svc] = app_lock
 	}
 
-	kad := services.KademliaService_ServiceDesc
+	kad := routing.KademliaService_ServiceDesc
 	kadDesc := &grpc.ServiceDesc{
 		ServiceName: kad.ServiceName,
 		HandlerType: kad.HandlerType,
@@ -104,6 +102,9 @@ func NewNetworkManager(local *api.Contact, cfg config.Config) (*NetworkManager, 
 	if err != nil {
 		return nil, err
 	}
+
+	// nm.tcpServ = grpc.NewServer()
+	// services.RegisterKademliaServiceServer(m.grpcServer, rt)
 
 	log.Printf("[NewNetworkManager] local=%s udp_port=%d",
 		cfg.Address, cfg.UDPPort)
@@ -236,12 +237,12 @@ func (m *NetworkManager) serve() {
 		go func(pkt transport.Packet) {
 			m.lock.RLock()
 			defer m.lock.RUnlock()
-			log.Printf("[NetworkManager]:%v packet received for %v", m.info.Username, pkt.Sender)
+			log.Printf("[NetworkManager] @%v packet received for %v", m.info.Username, pkt.Sender)
 
 			appLock := m.appLocks[pkt.RPC.Service]
-			// delegate lookup & call to DispatchRPC
-			log.Printf("[NetworkManager]:%v Dispatching RPC %s.%s",
+			log.Printf("[NetworkManager] @%v Dispatching RPC %s.%s",
 				m.info.Username, pkt.RPC.Service, pkt.RPC.Method)
+			// delegate lookup & call to DispatchRPC
 			respPayload, err := m.DispatchRPC(pkt.Ctx, appLock, pkt.RPC.Method, pkt.RPC.Payload)
 			if err != nil {
 				log.Printf("[NetworkManager] handler %s.%s error: %v",
@@ -262,6 +263,7 @@ func (m *NetworkManager) serve() {
 			// mark peer active
 			m.peers[pkt.Sender.Username] = pkt.Sender
 			m.active[pkt.Sender] = true
+			m.router.Update(pkt.Ctx, pkt.Sender)
 
 			if err := pkt.Reply(replyEnvelope); err != nil {
 				log.Printf("[NetworkManager] reply to %s failed: %v", pkt.Sender, err)
@@ -270,118 +272,112 @@ func (m *NetworkManager) serve() {
 	}
 }
 
-// ////
-// Dispatch RPCs to any network e.g. udp or tcp
-// Verifies the service and returns its handler from the registry
-// //
-func (m *NetworkManager) DispatchRPC(
-	ctx context.Context,
-	service api.AppLock,
-	method string,
-	payload []byte,
-) ([]byte, error) {
-	log.Printf("[NetworkManager]:%v Dispatching RPC", m.info.Username)
-	// retrieve the handler from the registry and return it
-	svcMap, ok := m.appHandlerRegistry[service]
-	if !ok {
-		return nil, fmt.Errorf("unknown service %q", service)
-	}
-	handler, ok := svcMap[method]
-	if !ok {
-		return nil, fmt.Errorf("unknown method %q for service %q", method, service)
-	}
-	return handler(ctx, payload)
-}
+// Lookup performs the Kademlia iterative FindNode for targetID,
+// using only the peers already in your routing table.  It returns
+// up to k closest Contacts to targetID.
+func (m *NetworkManager) Lookup(ctx context.Context, target api.NodeID) ([]*api.Contact, error) {
+	svcName := routing.KademliaService_ServiceDesc.ServiceName
 
-// InvokeRPC sends a single RPC over UDP and waits for a reply.
-func (m *NetworkManager) InvokeRPC(
-	ctx context.Context,
-	peerAddr string,
-	service, method string,
-	req, resp proto.Message,
-) error {
-	log.Printf("[NetworkManager]:%v Invoking RPC on %v", m.info.Username, peerAddr)
-
-	// 1) Marshal the typed request
-	payload, err := proto.Marshal(req)
+	// 1) seed shortlist from local routing table
+	shortlist, err := m.router.ClosestK(ctx, target)
 	if err != nil {
-		return fmt.Errorf("marshal %s.%s: %w", service, method, err)
+		return nil, fmt.Errorf("initial FindClosestK: %w", err)
 	}
 
-	// 2) Wrap in your generic envelope
-	envelope := &api.RPC{
-		Service: service,
-		Method:  method,
-		Sender:  m.info,  // local node info
-		Payload: payload, // actual typed RPC for the service
-	}
-	data, err := proto.Marshal(envelope)
-	if err != nil {
-		return fmt.Errorf("marshal envelope: %w", err)
-	}
+	k := m.cfg.K         // bucket size
+	alpha := m.cfg.Alpha // parallelism
 
-	// 3) Dial and send over UDP
-	udpAddr, err := net.ResolveUDPAddr("udp", peerAddr)
-	if err != nil {
-		return fmt.Errorf("resolve %s: %w", peerAddr, err)
-	}
-	conn, err := net.DialUDP("udp", nil, udpAddr)
-	if err != nil {
-		return fmt.Errorf("dial UDP %s: %w", peerAddr, err)
-	}
-	defer conn.Close()
+	queried := make(map[string]bool)
+	var prevFurthest api.NodeID
 
-	if _, err := conn.Write(data); err != nil {
-		return fmt.Errorf("send to %s: %w", peerAddr, err)
-	}
+	for {
 
-	// 4) Read response with a deadline
-	buf := make([]byte, 64<<10)
-	deadline := time.Now().Add(3 * time.Second)
-	conn.SetReadDeadline(deadline)
+		// sort & truncate to k
+		sort.Slice(shortlist, func(i, j int) bool {
+			return api.CompareXorDistance(
+				api.NodeID(shortlist[i].GetId()),
+				api.NodeID(shortlist[j].GetId()),
+				target,
+			)
+		})
+		if len(shortlist) > k {
+			shortlist = shortlist[:k]
+		}
 
-	n, _, err := conn.ReadFromUDP(buf)
-	if err != nil {
-		return fmt.Errorf("read from %s: %w", peerAddr, err)
-	}
+		// have we attained a closer node than furthest?
+		furthest := api.XorDistance(
+			api.NodeID(shortlist[len(shortlist)-1].GetId()),
+			target,
+		)
+		if prevFurthest != (api.NodeID{}) && !api.LessDistance(furthest, prevFurthest) {
+			break
+		}
+		prevFurthest = furthest
 
-	// 5) Unmarshal the envelope
-	var replyEnv api.RPC
-	if err := proto.Unmarshal(buf[:n], &replyEnv); err != nil {
-		return fmt.Errorf("unmarshal envelope: %w", err)
-	}
-
-	// 6) Finally unmarshal into the typed resp
-	if err := proto.Unmarshal(replyEnv.Payload, resp); err != nil {
-		return fmt.Errorf("unmarshal %s.%s response: %w", service, method, err)
-	}
-
-	// handle core services e.g. Kademlia routing
-	if service == "services.KademliaService" {
-		switch method {
-		case "Ping":
-			ack, ok := resp.(*services.ACK)
-			if !ok {
-				return fmt.Errorf("expected *services.ACK, got %T", resp)
+		// pick up to αlpha unqueried peers
+		toQuery := make([]*api.Contact, 0, alpha)
+		for _, c := range shortlist {
+			addr := c.GetUDPAddress()
+			if !queried[addr] && len(toQuery) < alpha {
+				queried[addr] = true
+				toQuery = append(toQuery, c)
 			}
-			m.lock.Lock()
-			defer m.lock.Unlock()
-			// record the Contact you just pinged
-			// we already know its network address is peerAddr
-			peer := ack.GetFrom()
-			m.peers[peer.Username] = peer
-			m.active[peer] = true
+		}
+		if len(toQuery) == 0 {
+			break
+		}
 
-			log.Println(peerAddr, m.router.RoutingTable.RoutingTableString())
+		// parallel FindNode on each
+		var wg sync.WaitGroup
+		var mu sync.Mutex
+		for _, c := range toQuery {
+			wg.Add(1)
+			go func(c *api.Contact) {
+				defer wg.Done()
+				var resp routing.NODES
+				err := m.InvokeRPC(
+					ctx,
+					c.GetUDPAddress(),
+					svcName, "FindNode",
+					&routing.FIND_NODE{
+						From:     m.info,
+						TargetId: target[:],
+					},
+					&resp,
+				)
+				if err != nil {
+					return
+				}
+				mu.Lock()
+				for i := range resp.Nodes {
+					shortlist = append(shortlist, resp.Nodes[i])
+				}
+				mu.Unlock()
+			}(c)
+		}
 
-			// since we received an ack, add the peer to the routing table
-			m.router.RoutingTable.Update(ctx, peer)
-			log.Printf("[NetworkManager]:%v got %v.Ack@%v",
-				m.info.Username, service, ack.From.Username)
-			log.Println(m.router.RoutingTable.RoutingTableString())
-
+		// wait with timeout
+		done := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(done)
+		}()
+		select {
+		case <-done:
+		case <-time.After(3 * time.Second):
 		}
 	}
 
-	return nil
+	// final sort & trim
+	sort.Slice(shortlist, func(i, j int) bool {
+		return api.CompareXorDistance(
+			api.NodeID(shortlist[i].GetId()),
+			api.NodeID(shortlist[j].GetId()),
+			target,
+		)
+	})
+	if len(shortlist) > k {
+		shortlist = shortlist[:k]
+	}
+	return shortlist, nil
 }

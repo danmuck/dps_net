@@ -29,9 +29,10 @@ type Contact struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
-	TcpPort       string                 `protobuf:"bytes,3,opt,name=tcp_port,json=tcpPort,proto3" json:"tcp_port,omitempty"`
-	UdpPort       string                 `protobuf:"bytes,4,opt,name=udp_port,json=udpPort,proto3" json:"udp_port,omitempty"`
-	LastSeen      *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=last_seen,json=lastSeen,proto3" json:"last_seen,omitempty"`
+	Address       string                 `protobuf:"bytes,3,opt,name=address,proto3" json:"address,omitempty"`
+	TcpPort       string                 `protobuf:"bytes,4,opt,name=tcp_port,json=tcpPort,proto3" json:"tcp_port,omitempty"`
+	UdpPort       string                 `protobuf:"bytes,5,opt,name=udp_port,json=udpPort,proto3" json:"udp_port,omitempty"`
+	LastSeen      *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_seen,json=lastSeen,proto3" json:"last_seen,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -76,6 +77,13 @@ func (x *Contact) GetId() []byte {
 func (x *Contact) GetUsername() string {
 	if x != nil {
 		return x.Username
+	}
+	return ""
+}
+
+func (x *Contact) GetAddress() string {
+	if x != nil {
+		return x.Address
 	}
 	return ""
 }
@@ -176,13 +184,14 @@ var File_api_rpc_proto protoreflect.FileDescriptor
 
 const file_api_rpc_proto_rawDesc = "" +
 	"\n" +
-	"\rapi/rpc.proto\x12\x03api\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa4\x01\n" +
+	"\rapi/rpc.proto\x12\x03api\x1a\x1fgoogle/protobuf/timestamp.proto\"\xbe\x01\n" +
 	"\aContact\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1a\n" +
-	"\busername\x18\x02 \x01(\tR\busername\x12\x19\n" +
-	"\btcp_port\x18\x03 \x01(\tR\atcpPort\x12\x19\n" +
-	"\budp_port\x18\x04 \x01(\tR\audpPort\x127\n" +
-	"\tlast_seen\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\blastSeen\"w\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12\x18\n" +
+	"\aaddress\x18\x03 \x01(\tR\aaddress\x12\x19\n" +
+	"\btcp_port\x18\x04 \x01(\tR\atcpPort\x12\x19\n" +
+	"\budp_port\x18\x05 \x01(\tR\audpPort\x127\n" +
+	"\tlast_seen\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\blastSeen\"w\n" +
 	"\x03RPC\x12\x18\n" +
 	"\aservice\x18\x01 \x01(\tR\aservice\x12\x16\n" +
 	"\x06method\x18\x02 \x01(\tR\x06method\x12$\n" +

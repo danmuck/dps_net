@@ -254,7 +254,7 @@ func TestFindClosest_SortsByDistance(t *testing.T) {
 	}
 
 	// target=0 → distances are 1,2,3,4,5
-	got, err := rt.FindClosestK(context.Background(), api.NodeID{})
+	got, err := rt.ClosestK(context.Background(), api.NodeID{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -286,7 +286,7 @@ func TestFindClosest_FewerPeersThanK(t *testing.T) {
 
 	}
 
-	got, err := rt.FindClosestK(context.Background(), api.NodeID{})
+	got, err := rt.ClosestK(context.Background(), api.NodeID{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -319,7 +319,7 @@ func TestFindClosest_NonzeroTarget(t *testing.T) {
 	}
 
 	// target=25 → XOR distances: |10^25|=19, |20^25|=13, |30^25|=7
-	got, err := rt.FindClosestK(context.Background(), api.NodeID(newIDLastByte(25)))
+	got, err := rt.ClosestK(context.Background(), api.NodeID(newIDLastByte(25)))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -15,7 +15,8 @@ import (
 	"github.com/danmuck/dps_net/api"
 	"github.com/danmuck/dps_net/config"
 	"github.com/danmuck/dps_net/network/routing"
-	"github.com/danmuck/dps_net/network/services"
+
+	// "github.com/danmuck/dps_net/network/routing"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
@@ -134,8 +135,7 @@ func TestKademliaService_FindNode(t *testing.T) {
 	// 1) Create a “local” contact (this node) and a routing table with k=3, alpha=3
 	localID := api.GenerateRandomBytes(api.KeyBytes)
 	local := api.NewContact(localID, "127.0.0.1", "0", "6669")
-	rt := routing.NewRoutingTable(local, 3, 3)
-	svc := services.NewKademliaService(rt)
+	svc := routing.NewRoutingTable(local, 3, 3)
 
 	// 2) Define a deterministic target ID
 	var targetID api.NodeID
@@ -149,13 +149,13 @@ func TestKademliaService_FindNode(t *testing.T) {
 		udpPort := fmt.Sprintf("%d", 6670+i)
 		peers[i] = api.NewContact(id, addr, "0", udpPort)
 		// tell the routing table about each one
-		if err := rt.Update(context.Background(), peers[i]); err != nil {
-			t.Fatalf("rt.Update failed: %v", err)
+		if err := svc.Update(context.Background(), peers[i]); err != nil {
+			t.Fatalf("svc.Update failed: %v", err)
 		}
 	}
 
 	// 4) Call the RPC handler
-	req := &services.FIND_NODE{
+	req := &routing.FIND_NODE{
 		From:     local,
 		TargetId: targetID[:],
 	}
@@ -165,7 +165,7 @@ func TestKademliaService_FindNode(t *testing.T) {
 	}
 
 	// 5) Compute what the routing table itself would return
-	want, err := rt.FindClosestK(context.Background(), targetID)
+	want, err := svc.ClosestK(context.Background(), targetID)
 	if err != nil {
 		t.Fatalf("FindClosestK failed: %v", err)
 	}
@@ -183,5 +183,5 @@ func TestKademliaService_FindNode(t *testing.T) {
 			t.Errorf("node %d: got ID %x, want %x", i, gotID, wantID)
 		}
 	}
-	log.Printf("%v", rt.RoutingTableString())
+	log.Printf("%v", svc.RoutingTableString())
 }

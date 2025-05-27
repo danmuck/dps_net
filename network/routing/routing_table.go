@@ -126,7 +126,7 @@ func (rt *RoutingTable) Remove(ctx context.Context, c *api.Contact) error {
 	return nil
 }
 
-func (rt *RoutingTable) FindClosestK(ctx context.Context, target api.NodeID) ([]*api.Contact, error) {
+func (rt *RoutingTable) ClosestK(ctx context.Context, target api.NodeID) ([]*api.Contact, error) {
 	rt.lock.Lock()
 	defer rt.lock.Unlock()
 

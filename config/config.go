@@ -56,14 +56,17 @@ func Load(path string) (*Config, error) {
 				break
 			}
 		}
-	}
 
-	// Load from TOML file if found
-	if path != "" {
 		if _, err := toml.DecodeFile(path, cfg); err != nil {
 			return nil, fmt.Errorf("parse config %s: %w", path, err)
 		}
+		return cfg, nil
 	}
+
+	if _, err := toml.DecodeFile(path, cfg); err != nil {
+		return nil, fmt.Errorf("parse config %s: %w", path, err)
+	}
+
 	// fmt.Printf("\n Path: %s \nconfig: %+v \n", path, cfg)
 
 	// Environment overrides
@@ -72,6 +75,9 @@ func Load(path string) (*Config, error) {
 	}
 	if v := os.Getenv("ADDRESS"); v != "" {
 		cfg.Address = v
+	}
+	if v := os.Getenv("NODE_USER"); v != "" {
+		cfg.Username = v
 	}
 	if v := os.Getenv("TCP_PORT"); v != "" {
 		if p, err := strconv.Atoi(v); err == nil {

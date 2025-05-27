@@ -80,7 +80,7 @@ func (userv *UDPServer) Start() error {
 						return err
 					}
 					target := peer.IP.String() + ":" + rpc.Sender.GetUdpPort()
-					log.Printf("[UDPServer] writing response to %v : %v.%v@%v",
+					log.Printf("[UDPServer] writing response to %v : %v.%v from: %v",
 						target, res.Service, res.Method, res.Sender.Username)
 
 					_, err = userv.conn.WriteToUDP(out, peer)

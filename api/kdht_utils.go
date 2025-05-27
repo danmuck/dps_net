@@ -186,6 +186,17 @@ func LessDistance(a, b NodeID) bool {
 }
 
 // ////
+// Computes LessDistance for a and b to the target nodeID
+// returns true if distance a->target < distance b->target
+// //
+func CompareXorDistance(a, b, target NodeID) bool {
+	return LessDistance(
+		XorDistance(a, target),
+		XorDistance(b, target),
+	)
+}
+
+// ////
 // KBucketIndex calculates the natural bucket index for a given NodeID
 // Index is the index of the bucket in the bucket array
 // Depth is the number of bits share with the local node

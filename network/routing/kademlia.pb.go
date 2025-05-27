@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v5.29.3
-// source: network/services/kademlia.proto
+// source: network/routing/kademlia.proto
 
-package services
+package routing
 
 import (
 	api "github.com/danmuck/dps_net/api"
@@ -35,7 +35,7 @@ type PING struct {
 
 func (x *PING) Reset() {
 	*x = PING{}
-	mi := &file_network_services_kademlia_proto_msgTypes[0]
+	mi := &file_network_routing_kademlia_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -47,7 +47,7 @@ func (x *PING) String() string {
 func (*PING) ProtoMessage() {}
 
 func (x *PING) ProtoReflect() protoreflect.Message {
-	mi := &file_network_services_kademlia_proto_msgTypes[0]
+	mi := &file_network_routing_kademlia_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -60,7 +60,7 @@ func (x *PING) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PING.ProtoReflect.Descriptor instead.
 func (*PING) Descriptor() ([]byte, []int) {
-	return file_network_services_kademlia_proto_rawDescGZIP(), []int{0}
+	return file_network_routing_kademlia_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *PING) GetFrom() *api.Contact {
@@ -87,7 +87,7 @@ type ACK struct {
 
 func (x *ACK) Reset() {
 	*x = ACK{}
-	mi := &file_network_services_kademlia_proto_msgTypes[1]
+	mi := &file_network_routing_kademlia_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -99,7 +99,7 @@ func (x *ACK) String() string {
 func (*ACK) ProtoMessage() {}
 
 func (x *ACK) ProtoReflect() protoreflect.Message {
-	mi := &file_network_services_kademlia_proto_msgTypes[1]
+	mi := &file_network_routing_kademlia_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -112,7 +112,7 @@ func (x *ACK) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ACK.ProtoReflect.Descriptor instead.
 func (*ACK) Descriptor() ([]byte, []int) {
-	return file_network_services_kademlia_proto_rawDescGZIP(), []int{1}
+	return file_network_routing_kademlia_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ACK) GetFrom() *api.Contact {
@@ -140,7 +140,7 @@ type STORE struct {
 
 func (x *STORE) Reset() {
 	*x = STORE{}
-	mi := &file_network_services_kademlia_proto_msgTypes[2]
+	mi := &file_network_routing_kademlia_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -152,7 +152,7 @@ func (x *STORE) String() string {
 func (*STORE) ProtoMessage() {}
 
 func (x *STORE) ProtoReflect() protoreflect.Message {
-	mi := &file_network_services_kademlia_proto_msgTypes[2]
+	mi := &file_network_routing_kademlia_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -165,7 +165,7 @@ func (x *STORE) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use STORE.ProtoReflect.Descriptor instead.
 func (*STORE) Descriptor() ([]byte, []int) {
-	return file_network_services_kademlia_proto_rawDescGZIP(), []int{2}
+	return file_network_routing_kademlia_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *STORE) GetFrom() *api.Contact {
@@ -199,7 +199,7 @@ type DELETE struct {
 
 func (x *DELETE) Reset() {
 	*x = DELETE{}
-	mi := &file_network_services_kademlia_proto_msgTypes[3]
+	mi := &file_network_routing_kademlia_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -211,7 +211,7 @@ func (x *DELETE) String() string {
 func (*DELETE) ProtoMessage() {}
 
 func (x *DELETE) ProtoReflect() protoreflect.Message {
-	mi := &file_network_services_kademlia_proto_msgTypes[3]
+	mi := &file_network_routing_kademlia_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -224,7 +224,7 @@ func (x *DELETE) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DELETE.ProtoReflect.Descriptor instead.
 func (*DELETE) Descriptor() ([]byte, []int) {
-	return file_network_services_kademlia_proto_rawDescGZIP(), []int{3}
+	return file_network_routing_kademlia_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *DELETE) GetFrom() *api.Contact {
@@ -251,7 +251,7 @@ type FIND_NODE struct {
 
 func (x *FIND_NODE) Reset() {
 	*x = FIND_NODE{}
-	mi := &file_network_services_kademlia_proto_msgTypes[4]
+	mi := &file_network_routing_kademlia_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -263,7 +263,7 @@ func (x *FIND_NODE) String() string {
 func (*FIND_NODE) ProtoMessage() {}
 
 func (x *FIND_NODE) ProtoReflect() protoreflect.Message {
-	mi := &file_network_services_kademlia_proto_msgTypes[4]
+	mi := &file_network_routing_kademlia_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -276,7 +276,7 @@ func (x *FIND_NODE) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FIND_NODE.ProtoReflect.Descriptor instead.
 func (*FIND_NODE) Descriptor() ([]byte, []int) {
-	return file_network_services_kademlia_proto_rawDescGZIP(), []int{4}
+	return file_network_routing_kademlia_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *FIND_NODE) GetFrom() *api.Contact {
@@ -303,7 +303,7 @@ type FIND_VALUE struct {
 
 func (x *FIND_VALUE) Reset() {
 	*x = FIND_VALUE{}
-	mi := &file_network_services_kademlia_proto_msgTypes[5]
+	mi := &file_network_routing_kademlia_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -315,7 +315,7 @@ func (x *FIND_VALUE) String() string {
 func (*FIND_VALUE) ProtoMessage() {}
 
 func (x *FIND_VALUE) ProtoReflect() protoreflect.Message {
-	mi := &file_network_services_kademlia_proto_msgTypes[5]
+	mi := &file_network_routing_kademlia_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -328,7 +328,7 @@ func (x *FIND_VALUE) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FIND_VALUE.ProtoReflect.Descriptor instead.
 func (*FIND_VALUE) Descriptor() ([]byte, []int) {
-	return file_network_services_kademlia_proto_rawDescGZIP(), []int{5}
+	return file_network_routing_kademlia_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *FIND_VALUE) GetFrom() *api.Contact {
@@ -355,7 +355,7 @@ type NODES struct {
 
 func (x *NODES) Reset() {
 	*x = NODES{}
-	mi := &file_network_services_kademlia_proto_msgTypes[6]
+	mi := &file_network_routing_kademlia_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -367,7 +367,7 @@ func (x *NODES) String() string {
 func (*NODES) ProtoMessage() {}
 
 func (x *NODES) ProtoReflect() protoreflect.Message {
-	mi := &file_network_services_kademlia_proto_msgTypes[6]
+	mi := &file_network_routing_kademlia_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -380,7 +380,7 @@ func (x *NODES) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NODES.ProtoReflect.Descriptor instead.
 func (*NODES) Descriptor() ([]byte, []int) {
-	return file_network_services_kademlia_proto_rawDescGZIP(), []int{6}
+	return file_network_routing_kademlia_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *NODES) GetFrom() *api.Contact {
@@ -409,7 +409,7 @@ type VALUE struct {
 
 func (x *VALUE) Reset() {
 	*x = VALUE{}
-	mi := &file_network_services_kademlia_proto_msgTypes[7]
+	mi := &file_network_routing_kademlia_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -421,7 +421,7 @@ func (x *VALUE) String() string {
 func (*VALUE) ProtoMessage() {}
 
 func (x *VALUE) ProtoReflect() protoreflect.Message {
-	mi := &file_network_services_kademlia_proto_msgTypes[7]
+	mi := &file_network_routing_kademlia_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -434,7 +434,7 @@ func (x *VALUE) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VALUE.ProtoReflect.Descriptor instead.
 func (*VALUE) Descriptor() ([]byte, []int) {
-	return file_network_services_kademlia_proto_rawDescGZIP(), []int{7}
+	return file_network_routing_kademlia_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *VALUE) GetFrom() *api.Contact {
@@ -475,7 +475,7 @@ type REFRESH struct {
 
 func (x *REFRESH) Reset() {
 	*x = REFRESH{}
-	mi := &file_network_services_kademlia_proto_msgTypes[8]
+	mi := &file_network_routing_kademlia_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -487,7 +487,7 @@ func (x *REFRESH) String() string {
 func (*REFRESH) ProtoMessage() {}
 
 func (x *REFRESH) ProtoReflect() protoreflect.Message {
-	mi := &file_network_services_kademlia_proto_msgTypes[8]
+	mi := &file_network_routing_kademlia_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -500,7 +500,7 @@ func (x *REFRESH) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use REFRESH.ProtoReflect.Descriptor instead.
 func (*REFRESH) Descriptor() ([]byte, []int) {
-	return file_network_services_kademlia_proto_rawDescGZIP(), []int{8}
+	return file_network_routing_kademlia_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *REFRESH) GetFrom() *api.Contact {
@@ -517,11 +517,11 @@ func (x *REFRESH) GetKey() []byte {
 	return nil
 }
 
-var File_network_services_kademlia_proto protoreflect.FileDescriptor
+var File_network_routing_kademlia_proto protoreflect.FileDescriptor
 
-const file_network_services_kademlia_proto_rawDesc = "" +
+const file_network_routing_kademlia_proto_rawDesc = "" +
 	"\n" +
-	"\x1fnetwork/services/kademlia.proto\x12\bservices\x1a\rapi/rpc.proto\">\n" +
+	"\x1enetwork/routing/kademlia.proto\x12\arouting\x1a\rapi/rpc.proto\">\n" +
 	"\x04PING\x12 \n" +
 	"\x04from\x18\x01 \x01(\v2\f.api.ContactR\x04from\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\fR\x05value\"=\n" +
@@ -552,64 +552,64 @@ const file_network_services_kademlia_proto_rawDesc = "" +
 	"\x05nodes\x18\x04 \x03(\v2\f.api.ContactR\x05nodes\"=\n" +
 	"\aREFRESH\x12 \n" +
 	"\x04from\x18\x01 \x01(\v2\f.api.ContactR\x04from\x12\x10\n" +
-	"\x03key\x18\x02 \x01(\fR\x03key2\x9f\x02\n" +
-	"\x0fKademliaService\x12%\n" +
-	"\x04Ping\x12\x0e.services.PING\x1a\r.services.ACK\x12'\n" +
-	"\x05Store\x12\x0f.services.STORE\x1a\r.services.ACK\x12)\n" +
-	"\x06Delete\x12\x10.services.DELETE\x1a\r.services.ACK\x120\n" +
-	"\bFindNode\x12\x13.services.FIND_NODE\x1a\x0f.services.NODES\x122\n" +
-	"\tFindValue\x12\x14.services.FIND_VALUE\x1a\x0f.services.VALUE\x12+\n" +
-	"\aRefresh\x12\x11.services.REFRESH\x1a\r.services.ACKB-Z+github.com/danmuck/dps_net/network/servicesb\x06proto3"
+	"\x03key\x18\x02 \x01(\fR\x03key2\x93\x02\n" +
+	"\x0fKademliaService\x12#\n" +
+	"\x04Ping\x12\r.routing.PING\x1a\f.routing.ACK\x12%\n" +
+	"\x05Store\x12\x0e.routing.STORE\x1a\f.routing.ACK\x12'\n" +
+	"\x06Delete\x12\x0f.routing.DELETE\x1a\f.routing.ACK\x12.\n" +
+	"\bFindNode\x12\x12.routing.FIND_NODE\x1a\x0e.routing.NODES\x120\n" +
+	"\tFindValue\x12\x13.routing.FIND_VALUE\x1a\x0e.routing.VALUE\x12)\n" +
+	"\aRefresh\x12\x10.routing.REFRESH\x1a\f.routing.ACKB,Z*github.com/danmuck/dps_net/network/routingb\x06proto3"
 
 var (
-	file_network_services_kademlia_proto_rawDescOnce sync.Once
-	file_network_services_kademlia_proto_rawDescData []byte
+	file_network_routing_kademlia_proto_rawDescOnce sync.Once
+	file_network_routing_kademlia_proto_rawDescData []byte
 )
 
-func file_network_services_kademlia_proto_rawDescGZIP() []byte {
-	file_network_services_kademlia_proto_rawDescOnce.Do(func() {
-		file_network_services_kademlia_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_network_services_kademlia_proto_rawDesc), len(file_network_services_kademlia_proto_rawDesc)))
+func file_network_routing_kademlia_proto_rawDescGZIP() []byte {
+	file_network_routing_kademlia_proto_rawDescOnce.Do(func() {
+		file_network_routing_kademlia_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_network_routing_kademlia_proto_rawDesc), len(file_network_routing_kademlia_proto_rawDesc)))
 	})
-	return file_network_services_kademlia_proto_rawDescData
+	return file_network_routing_kademlia_proto_rawDescData
 }
 
-var file_network_services_kademlia_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
-var file_network_services_kademlia_proto_goTypes = []any{
-	(*PING)(nil),        // 0: services.PING
-	(*ACK)(nil),         // 1: services.ACK
-	(*STORE)(nil),       // 2: services.STORE
-	(*DELETE)(nil),      // 3: services.DELETE
-	(*FIND_NODE)(nil),   // 4: services.FIND_NODE
-	(*FIND_VALUE)(nil),  // 5: services.FIND_VALUE
-	(*NODES)(nil),       // 6: services.NODES
-	(*VALUE)(nil),       // 7: services.VALUE
-	(*REFRESH)(nil),     // 8: services.REFRESH
+var file_network_routing_kademlia_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_network_routing_kademlia_proto_goTypes = []any{
+	(*PING)(nil),        // 0: routing.PING
+	(*ACK)(nil),         // 1: routing.ACK
+	(*STORE)(nil),       // 2: routing.STORE
+	(*DELETE)(nil),      // 3: routing.DELETE
+	(*FIND_NODE)(nil),   // 4: routing.FIND_NODE
+	(*FIND_VALUE)(nil),  // 5: routing.FIND_VALUE
+	(*NODES)(nil),       // 6: routing.NODES
+	(*VALUE)(nil),       // 7: routing.VALUE
+	(*REFRESH)(nil),     // 8: routing.REFRESH
 	(*api.Contact)(nil), // 9: api.Contact
 }
-var file_network_services_kademlia_proto_depIdxs = []int32{
-	9,  // 0: services.PING.from:type_name -> api.Contact
-	9,  // 1: services.ACK.from:type_name -> api.Contact
-	9,  // 2: services.STORE.from:type_name -> api.Contact
-	9,  // 3: services.DELETE.from:type_name -> api.Contact
-	9,  // 4: services.FIND_NODE.from:type_name -> api.Contact
-	9,  // 5: services.FIND_VALUE.from:type_name -> api.Contact
-	9,  // 6: services.NODES.from:type_name -> api.Contact
-	9,  // 7: services.NODES.nodes:type_name -> api.Contact
-	9,  // 8: services.VALUE.from:type_name -> api.Contact
-	9,  // 9: services.VALUE.nodes:type_name -> api.Contact
-	9,  // 10: services.REFRESH.from:type_name -> api.Contact
-	0,  // 11: services.KademliaService.Ping:input_type -> services.PING
-	2,  // 12: services.KademliaService.Store:input_type -> services.STORE
-	3,  // 13: services.KademliaService.Delete:input_type -> services.DELETE
-	4,  // 14: services.KademliaService.FindNode:input_type -> services.FIND_NODE
-	5,  // 15: services.KademliaService.FindValue:input_type -> services.FIND_VALUE
-	8,  // 16: services.KademliaService.Refresh:input_type -> services.REFRESH
-	1,  // 17: services.KademliaService.Ping:output_type -> services.ACK
-	1,  // 18: services.KademliaService.Store:output_type -> services.ACK
-	1,  // 19: services.KademliaService.Delete:output_type -> services.ACK
-	6,  // 20: services.KademliaService.FindNode:output_type -> services.NODES
-	7,  // 21: services.KademliaService.FindValue:output_type -> services.VALUE
-	1,  // 22: services.KademliaService.Refresh:output_type -> services.ACK
+var file_network_routing_kademlia_proto_depIdxs = []int32{
+	9,  // 0: routing.PING.from:type_name -> api.Contact
+	9,  // 1: routing.ACK.from:type_name -> api.Contact
+	9,  // 2: routing.STORE.from:type_name -> api.Contact
+	9,  // 3: routing.DELETE.from:type_name -> api.Contact
+	9,  // 4: routing.FIND_NODE.from:type_name -> api.Contact
+	9,  // 5: routing.FIND_VALUE.from:type_name -> api.Contact
+	9,  // 6: routing.NODES.from:type_name -> api.Contact
+	9,  // 7: routing.NODES.nodes:type_name -> api.Contact
+	9,  // 8: routing.VALUE.from:type_name -> api.Contact
+	9,  // 9: routing.VALUE.nodes:type_name -> api.Contact
+	9,  // 10: routing.REFRESH.from:type_name -> api.Contact
+	0,  // 11: routing.KademliaService.Ping:input_type -> routing.PING
+	2,  // 12: routing.KademliaService.Store:input_type -> routing.STORE
+	3,  // 13: routing.KademliaService.Delete:input_type -> routing.DELETE
+	4,  // 14: routing.KademliaService.FindNode:input_type -> routing.FIND_NODE
+	5,  // 15: routing.KademliaService.FindValue:input_type -> routing.FIND_VALUE
+	8,  // 16: routing.KademliaService.Refresh:input_type -> routing.REFRESH
+	1,  // 17: routing.KademliaService.Ping:output_type -> routing.ACK
+	1,  // 18: routing.KademliaService.Store:output_type -> routing.ACK
+	1,  // 19: routing.KademliaService.Delete:output_type -> routing.ACK
+	6,  // 20: routing.KademliaService.FindNode:output_type -> routing.NODES
+	7,  // 21: routing.KademliaService.FindValue:output_type -> routing.VALUE
+	1,  // 22: routing.KademliaService.Refresh:output_type -> routing.ACK
 	17, // [17:23] is the sub-list for method output_type
 	11, // [11:17] is the sub-list for method input_type
 	11, // [11:11] is the sub-list for extension type_name
@@ -617,26 +617,26 @@ var file_network_services_kademlia_proto_depIdxs = []int32{
 	0,  // [0:11] is the sub-list for field type_name
 }
 
-func init() { file_network_services_kademlia_proto_init() }
-func file_network_services_kademlia_proto_init() {
-	if File_network_services_kademlia_proto != nil {
+func init() { file_network_routing_kademlia_proto_init() }
+func file_network_routing_kademlia_proto_init() {
+	if File_network_routing_kademlia_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_network_services_kademlia_proto_rawDesc), len(file_network_services_kademlia_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_network_routing_kademlia_proto_rawDesc), len(file_network_routing_kademlia_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_network_services_kademlia_proto_goTypes,
-		DependencyIndexes: file_network_services_kademlia_proto_depIdxs,
-		MessageInfos:      file_network_services_kademlia_proto_msgTypes,
+		GoTypes:           file_network_routing_kademlia_proto_goTypes,
+		DependencyIndexes: file_network_routing_kademlia_proto_depIdxs,
+		MessageInfos:      file_network_routing_kademlia_proto_msgTypes,
 	}.Build()
-	File_network_services_kademlia_proto = out.File
-	file_network_services_kademlia_proto_goTypes = nil
-	file_network_services_kademlia_proto_depIdxs = nil
+	File_network_routing_kademlia_proto = out.File
+	file_network_routing_kademlia_proto_goTypes = nil
+	file_network_routing_kademlia_proto_depIdxs = nil
 }

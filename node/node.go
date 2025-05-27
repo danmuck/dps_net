@@ -3,12 +3,15 @@ package node
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
+	"sync"
 
 	"github.com/danmuck/dps_net/api"
 	"github.com/danmuck/dps_net/config"
 	"github.com/danmuck/dps_net/network"
-	"github.com/danmuck/dps_net/network/services"
+	"github.com/danmuck/dps_net/network/routing"
+	// "github.com/danmuck/dps_net/network/routing"
 )
 
 // Node is the primary entrypoint to the P2P network.
@@ -27,6 +30,8 @@ type Node struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	lock sync.RWMutex
 }
 
 // NewNode creates a Node, loading config from cfgPath (or auto-discovering when empty).
@@ -88,16 +93,10 @@ func NewNode(cfgPath string) (*Node, error) {
 
 // Start launches transports and bootstraps via the manager.
 func (n *Node) Start() error {
-	// Start gRPC (if enabled) and UDP listeners
-	// if err := n.mgr.StartGRPC(); err != nil {
-	// 	return fmt.Errorf("start grpc: %w", err)
-	// }
-	// n.mgr.StartUDP()
-	//
 	n.mgr.Start()
 	// Bootstrap with configured peers
 	for _, peer := range n.cfg.BootstrapPeers {
-		if err := n.Join(peer); err != nil {
+		if err := n.Ping(peer); err != nil {
 			fmt.Printf("warning: join %s: %v\n", peer, err)
 		}
 	}
@@ -110,26 +109,26 @@ func (n *Node) Stop() {
 	n.cancel()
 }
 
-// Join sends a Ping RPC to integrate a peer into the routing table
-func (n *Node) Join(peerAddr string) error {
+// Ping sends a Ping RPC to integrate a peer into the routing table
+func (n *Node) Ping(peerAddr string) error {
 	// 1) Build the typed request
-	ping := &services.PING{
+	ping := &routing.PING{
 		From:  n.Contact,
 		Value: nil, // or []byte whatever payload you want
 	}
 
 	// 2) Prepare the typed response holder
-	var ack services.ACK
+	var ack routing.ACK
 
 	// 3) InvokeRemote will marshal pingReq, wrap in api.RPC, send, then
 	//    unmarshal the inner ACK for you
 	if err := n.mgr.InvokeRPC(
 		n.ctx,
 		peerAddr,
-		"services.KademliaService", // service name
-		"Ping",                     // method name
-		ping,                       // typed request
-		&ack,                       // typed response
+		"routing.KademliaService", // service name
+		"Ping",                    // method name
+		ping,                      // typed request
+		&ack,                      // typed response
 	); err != nil {
 		return fmt.Errorf("ping %s: %w", peerAddr, err)
 	}
@@ -137,10 +136,56 @@ func (n *Node) Join(peerAddr string) error {
 	return nil
 }
 
+// Join bootstraps this node into the network via the given peer.
+// It:
+//  1. Pings the bootstrap node
+//  2. Asks it for the k closest nodes to you
+//  3. Pings each of those to fill your buckets
+func (n *Node) Join(bootstrapAddr string) error {
+	// 0) ensure the bootstrap isn’t yourself
+	if bootstrapAddr == n.Contact.GetUDPAddress() {
+		return fmt.Errorf("cannot bootstrap to self")
+	}
+
+	// 1) Ping the bootstrap
+	if err := n.Ping(bootstrapAddr); err != nil {
+		return fmt.Errorf("cannot reach bootstrap %s: %w", bootstrapAddr, err)
+	}
+
+	// 2) Find the k closest nodes to *your* own ID
+	peers, err := n.mgr.Lookup(n.ctx, n.ID)
+	if err != nil {
+		return fmt.Errorf("bootstrap Lookup via %s failed: %w", bootstrapAddr, err)
+	}
+	if len(peers) == 0 {
+		// It’s not necessarily an error—if k=1 and only bootstrap exists, you’re done.
+		log.Printf("Join: no additional peers returned after bootstrap")
+	}
+
+	// 3) Ping each returned peer in parallel (fill your buckets)
+	var wg sync.WaitGroup
+	for _, peer := range peers {
+		addr := peer.GetAddress() + ":" + peer.GetUdpPort()
+		// avoid pinging the bootstrap twice
+		if addr == bootstrapAddr || addr == n.Contact.GetUDPAddress() {
+			continue
+		}
+		wg.Add(1)
+		go func(addr string) {
+			defer wg.Done()
+			if err := n.Ping(addr); err != nil {
+				log.Printf("warning: ping %s failed: %v", addr, err)
+			}
+		}(addr)
+	}
+	wg.Wait()
+	return nil
+}
+
 // Put stores key/value via the DHT
 func (n *Node) Put(key, value []byte) error {
 	// req := &api.RPC{
-	// 	Service: "services.KademliaService",
+	// 	Service: "routing.KademliaService",
 	// 	Method:  "Store",
 	// 	Sender:  n.Contact,
 	// 	Payload: func() []byte {
@@ -161,7 +206,7 @@ func (n *Node) Put(key, value []byte) error {
 // Get fetches a value via the DHT
 func (n *Node) Get(key []byte) ([]byte, bool, error) {
 	req := &api.RPC{
-		Service: "services.KademliaService",
+		Service: "routing.KademliaService",
 		Method:  "FindValue",
 		Sender:  n.Contact,
 		Payload: func() []byte {

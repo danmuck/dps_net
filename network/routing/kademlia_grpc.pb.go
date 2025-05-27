@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.29.3
-// source: network/services/kademlia.proto
+// source: network/routing/kademlia.proto
 
-package services
+package routing
 
 import (
 	context "context"
@@ -19,12 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	KademliaService_Ping_FullMethodName      = "/services.KademliaService/Ping"
-	KademliaService_Store_FullMethodName     = "/services.KademliaService/Store"
-	KademliaService_Delete_FullMethodName    = "/services.KademliaService/Delete"
-	KademliaService_FindNode_FullMethodName  = "/services.KademliaService/FindNode"
-	KademliaService_FindValue_FullMethodName = "/services.KademliaService/FindValue"
-	KademliaService_Refresh_FullMethodName   = "/services.KademliaService/Refresh"
+	KademliaService_Ping_FullMethodName      = "/routing.KademliaService/Ping"
+	KademliaService_Store_FullMethodName     = "/routing.KademliaService/Store"
+	KademliaService_Delete_FullMethodName    = "/routing.KademliaService/Delete"
+	KademliaService_FindNode_FullMethodName  = "/routing.KademliaService/FindNode"
+	KademliaService_FindValue_FullMethodName = "/routing.KademliaService/FindValue"
+	KademliaService_Refresh_FullMethodName   = "/routing.KademliaService/Refresh"
 )
 
 // KademliaServiceClient is the client API for KademliaService service.
@@ -298,7 +298,7 @@ func _KademliaService_Refresh_Handler(srv interface{}, ctx context.Context, dec 
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var KademliaService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "services.KademliaService",
+	ServiceName: "routing.KademliaService",
 	HandlerType: (*KademliaServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -327,5 +327,5 @@ var KademliaService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "network/services/kademlia.proto",
+	Metadata: "network/routing/kademlia.proto",
 }
