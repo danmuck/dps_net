@@ -12,18 +12,18 @@ import (
 // Dispatch RPCs to any network e.g. udp or tcp
 // Verifies the service and returns its handler from the registry
 // //
-func (m *NetworkManager) DispatchRPC(
+func (nm *NetworkManager) DispatchRPC(
 	ctx context.Context,
 	service api.AppLock,
 	method string,
 	payload []byte,
 ) ([]byte, error) {
-	log.Printf("[NetworkManager] @%v Dispatching RPC %v", m.info.Username, method)
+	log.Printf("@%v Dispatching RPC %v", nm.info.Username, method)
 
 	// TODO: Middleware
 
 	// retrieve the handler from the registry and return it
-	svcMap, ok := m.appHandlerRegistry[service]
+	svcMap, ok := nm.appHandlerRegistry[service]
 	if !ok {
 		return nil, fmt.Errorf("unknown service %q", service)
 	}

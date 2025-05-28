@@ -160,6 +160,35 @@ func GenerateRandomBytes(n int) []byte {
 	return id
 }
 
+// RandomIDInBucket returns a new ID that
+//   - matches `local` in all bits 0..k−1,
+//   - differs in bit k,
+//   - has bits k+1..159 uniformly random.
+//
+// Runs in O(len(ID)) and only touches the RNG once.
+func RandomIDInBucket(local NodeID, k int) (NodeID, error) {
+	if k < 0 || k >= 160 {
+		return NodeID{}, fmt.Errorf("bucket %d out of range", k)
+	}
+
+	out := local // start with your ID
+	byteIdx, bit := k/8, 7-(k%8)
+
+	// 1) randomize the byte that contains bit k _and_ all lower bytes
+	if _, err := rand.Read(out[byteIdx:]); err != nil {
+		return NodeID{}, err
+	}
+
+	// 2) restore the high (0..k−1) bits of that byte back to local
+	highMask := byte(0xFF << (bit + 1))
+	out[byteIdx] = (out[byteIdx] &^ highMask) | (local[byteIdx] & highMask)
+
+	// 3) flip exactly bit k
+	out[byteIdx] ^= 1 << bit
+
+	return out, nil
+}
+
 // ////
 // XorDistance calculates the XOR distance between two NodeIDs
 // //

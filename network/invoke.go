@@ -9,25 +9,26 @@ import (
 
 	"github.com/danmuck/dps_net/api"
 	"github.com/danmuck/dps_net/network/routing"
+
 	// "github.com/danmuck/dps_net/network/routing"
 	"google.golang.org/protobuf/proto"
 )
 
 func (nm *NetworkManager) updatePeer(ctx context.Context, peer *api.Contact) {
 	// right after proto.Unmarshal(buf, &replyEnv):
-	nm.router.Update(ctx, peer)
+	nm.Router().Update(ctx, peer)
 	nm.peers[peer.Username] = peer
 	nm.active[peer] = true
 }
 
 // InvokeRPC sends a single RPC over UDP and waits for a reply.
-func (m *NetworkManager) InvokeRPC(
+func (nm *NetworkManager) InvokeRPC(
 	ctx context.Context,
 	peerAddr string,
 	service, method string,
 	req, resp proto.Message,
 ) error {
-	log.Printf("[NetworkManager]@%v Invoking RPC on %v", m.info.Username, peerAddr)
+	log.Printf("@%v Invoking RPC on %v", nm.info.Username, peerAddr)
 
 	// 1) Marshal the typed request
 	payload, err := proto.Marshal(req)
@@ -39,7 +40,7 @@ func (m *NetworkManager) InvokeRPC(
 	envelope := &api.RPC{
 		Service: service,
 		Method:  method,
-		Sender:  m.info,  // local node info
+		Sender:  nm.info, // local node info
 		Payload: payload, // actual typed RPC for the service
 	}
 	data, err := proto.Marshal(envelope)
@@ -91,35 +92,35 @@ func (m *NetworkManager) InvokeRPC(
 			if !ok {
 				return fmt.Errorf("expected *routing.ACK, got %T", resp)
 			}
-			m.lock.Lock()
-			defer m.lock.Unlock()
+			nm.lock.Lock()
+			defer nm.lock.Unlock()
 			// record the Contact you just pinged
 			// we already know its network address is peerAddr
 			peer := ack.GetFrom()
-			m.peers[peer.Username] = peer
-			m.active[peer] = true
+			nm.peers[peer.Username] = peer
+			nm.active[peer] = true
 			// since we received an ack, add the peer to the routing table
-			m.router.Update(ctx, peer)
+			nm.Router().Update(ctx, peer)
 
-			log.Printf("[NetworkManager]@%v got %v.Ack from %v",
-				m.info.Username, service, ack.From.Username)
-			log.Println(m.router.RoutingTableString())
+			log.Printf("@%v got %v.Ack from %v",
+				nm.info.Username, service, ack.From.Username)
+			// log.Println(nm.Router().RoutingTableString())
 
 		case "FindNode":
 			nodes, ok := resp.(*routing.NODES)
 			if !ok {
 				return fmt.Errorf("expected *routing.NODES, got %T", resp)
 			}
-			log.Printf("[NetworkManager]@%v got %v.Nodes from %v",
-				m.info.Username, service, nodes.From.Username)
+			log.Printf("@%v got %v.Nodes from %v",
+				nm.info.Username, service, nodes.From.Username)
 
-			m.lock.Lock()
-			defer m.lock.Unlock()
+			nm.lock.Lock()
+			defer nm.lock.Unlock()
 			for i := range nodes.Nodes {
 				peer := nodes.Nodes[i]
-				m.peers[peer.GetUsername()] = peer
-				m.active[peer] = true
-				m.router.Update(ctx, peer)
+				nm.peers[peer.GetUsername()] = peer
+				nm.active[peer] = true
+				nm.Router().Update(ctx, peer)
 			}
 		}
 	}

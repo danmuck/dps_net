@@ -2,12 +2,17 @@ package main
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"os"
 	"strconv"
 
 	"github.com/danmuck/dps_net/api"
 )
+
+func genPeerUsername(n int) string {
+	return fmt.Sprintf("P%05d", n)
+}
 
 func randString(n int) (string, error) {
 	b := make([]byte, n)
@@ -38,7 +43,10 @@ func (c *Client) initSpin() error {
 	}
 
 	// we assume this wont error because atm we dont care
-	name, _ := randString(10)
+	if len(c.peers) == 0 {
+		return nil
+	}
+	name := genPeerUsername(len(c.peers))
 	if err := os.Setenv("NODE_USER", name); err != nil {
 		return LogErrorStr("error setting NODE_USER: %v", err)
 	}

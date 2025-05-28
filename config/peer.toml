@@ -1,11 +1,12 @@
 node_id = "fafafafafafafa00000000000000000000000000"
-username = "friend"
+username = "pigdirt"
 address = "localhost"
 k = 5
 alpha = 3
 grpc_port = 6667
 udp_port = 6670
 timeout = "5s"
+refresh = "60s"
 
 [app_locks]
 "routing.KademliaService" = "e7ac1f5b8d092c3a4f6e1b2d3c4a5e6f7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2ae7ac1f5b8d092c3a4f6e1b2d3c4a5e6f7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2a"

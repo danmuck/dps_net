@@ -36,20 +36,21 @@ type RoutingTableInterface interface {
 	// Update inserts or refreshes a contact in the appropriate bucket.
 	// If the bucket is full it’s up to the implementation whether to evict
 	// the least-recently seen node or split the bucket (for Kademlia+ variants).
-	Update(ctx context.Context, c Contact) error
+	Update(ctx context.Context, c *Contact) error
 
 	// Remove deletes a contact from whatever bucket it lives in.
 	// Useful if you detect a node has permanently failed.
-	Remove(ctx context.Context, c Contact) error
+	Remove(ctx context.Context, c *Contact) error
 
 	// FindClosest returns up to count contacts closest (by XOR distance)
 	// to the given target ID.
-	FindClosest(ctx context.Context, target NodeID, count int) ([]Contact, error)
+	ClosestK(ctx context.Context, target NodeID) ([]*Contact, error)
 
 	// GetBucket returns all contacts currently in the bucket at index i.
 	// The index usually corresponds to the length of the common-prefix with
 	// the local node (i.e. the “distance range”).
-	GetBucket(i int) ([]Contact, error)
+	GetBucket(i int) ([]*Contact, error)
+	GetBucketSize(i int) int
 
 	// print the routing table to terminal
 	RoutingTableString() string

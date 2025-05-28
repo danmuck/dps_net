@@ -54,6 +54,15 @@ func (rt *RoutingTable) GetBucket(i int) ([]*api.Contact, error) {
 	return peers, nil
 }
 
+func (rt *RoutingTable) GetBucketSize(i int) int {
+	rt.lock.Lock()
+	defer rt.lock.Unlock()
+	if i >= len(rt.buckets) {
+		return -1
+	}
+	return len(rt.buckets[i].peers)
+}
+
 func (rt *RoutingTable) Update(ctx context.Context, c *api.Contact) error {
 	localID := api.SliceToNodeID(rt.local.GetId())
 	otherID := api.SliceToNodeID(c.GetId())
@@ -170,7 +179,7 @@ func (rt *RoutingTable) RoutingTableString() string {
 	defer rt.lock.Unlock()
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Routing table: [%08b]\n  %d buckets: \n", rt.local.GetId(), len(rt.buckets)))
+	sb.WriteString(fmt.Sprintf("Routing table: [%08b]\n%d buckets: \n", rt.local.GetId(), len(rt.buckets)))
 	for _, b := range rt.buckets {
 		sb.WriteString(b.PrintString())
 	}

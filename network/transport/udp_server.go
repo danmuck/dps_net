@@ -31,13 +31,13 @@ func NewUDPServer(addr, port string, recv chan Packet) (*UDPServer, error) {
 		recv:    recv,
 	}
 
-	log.Printf("[NewUDPServer] %s \n", u.address)
+	log.Printf("new %s \n", u.address)
 
 	return u, nil
 }
 
 func (userv *UDPServer) Start() error {
-	log.Printf("[UDPServer] (%v) starting", userv.address.String())
+	log.Printf("(%v) starting", userv.address.String())
 	ctx, cancel := context.WithCancel(context.Background())
 	userv.cancel = cancel
 	go func() {
@@ -48,14 +48,14 @@ func (userv *UDPServer) Start() error {
 				return
 			default:
 				n, peer, err := userv.conn.ReadFromUDP(buf)
-				log.Printf("[UDPServer] (%v) recv %d bytes from %s", userv.address.String(), n, peer)
+				log.Printf("(%v) recv %d bytes from %s", userv.address.String(), n, peer)
 				if err != nil {
 					select {
 					// check ctx.Done(), bail out if canceled
 					case <-ctx.Done():
 						return
 					default:
-						log.Printf("[UDPServer] (%v) udp read: %v", userv.address.String(), err)
+						log.Printf("(%v) udp read: %v", userv.address.String(), err)
 						continue
 					}
 				}
@@ -65,11 +65,11 @@ func (userv *UDPServer) Start() error {
 				// Unmarshal RPC
 				var rpc api.RPC
 				if err := proto.Unmarshal(data, &rpc); err != nil {
-					log.Printf("[UDPServer] (%v) invalid rpc: %v", userv.address.String(), err)
+					log.Printf("(%v) invalid rpc: %v", userv.address.String(), err)
 					continue
 				}
-				log.Printf("[UDPServer] (%v) parsed RPC – Service=%q Method=%q Sender=%v",
-					userv.address.String(), rpc.Service, rpc.Method, rpc.Sender)
+				log.Printf("(%v) parsed RPC – Service=%q Method=%q Sender=%v:%v",
+					userv.address.String(), rpc.Service, rpc.Method, rpc.Sender.GetUsername(), rpc.Sender.GetUDPAddress())
 
 				// TODO: ?? verify Contact
 
@@ -80,7 +80,7 @@ func (userv *UDPServer) Start() error {
 						return err
 					}
 					target := peer.IP.String() + ":" + rpc.Sender.GetUdpPort()
-					log.Printf("[UDPServer] writing response to %v : %v.%v from: %v",
+					log.Printf("writing response to %v : %v.%v from: %v",
 						target, res.Service, res.Method, res.Sender.Username)
 
 					_, err = userv.conn.WriteToUDP(out, peer)
@@ -94,7 +94,7 @@ func (userv *UDPServer) Start() error {
 					Network: "udp",
 					Reply:   replyFn,
 				}
-				log.Printf("[UDPServer] (%v) pushing packet onto network", userv.address.String())
+				log.Printf("(%v) pushing packet onto network", userv.address.String())
 				userv.recv <- pkt
 			}
 		}

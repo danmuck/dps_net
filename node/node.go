@@ -6,6 +6,7 @@ import (
 	"log"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/danmuck/dps_net/api"
 	"github.com/danmuck/dps_net/config"
@@ -100,6 +101,20 @@ func (n *Node) Start() error {
 			fmt.Printf("warning: join %s: %v\n", peer, err)
 		}
 	}
+
+	go func() {
+		ticker := time.NewTicker(n.cfg.Refresh)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				n.RefreshBuckets()
+			case <-n.ctx.Done():
+				return
+			}
+		}
+	}()
+
 	return nil
 }
 
@@ -148,10 +163,15 @@ func (n *Node) Join(bootstrapUDPAddr string) error {
 	}
 
 	// 1) Ping the bootstrap
-	if err := n.Ping(bootstrapUDPAddr); err != nil {
-		return fmt.Errorf("cannot reach bootstrap %s: %w", bootstrapUDPAddr, err)
+	// if err := n.Ping(bootstrapUDPAddr); err != nil {
+	// 	return fmt.Errorf("cannot reach bootstrap %s: %w", bootstrapUDPAddr, err)
+	// }
+	for range 3 {
+		if err := n.Ping(bootstrapUDPAddr); err == nil {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
-
 	// 2) Find the k closest nodes to *your* own ID
 	peers, err := n.mgr.Lookup(n.ctx, n.ID)
 	if err != nil {
@@ -173,8 +193,13 @@ func (n *Node) Join(bootstrapUDPAddr string) error {
 		wg.Add(1)
 		go func(addr string) {
 			defer wg.Done()
-			if err := n.Ping(addr); err != nil {
-				log.Printf("warning: ping %s failed: %v", addr, err)
+			for range 3 {
+				// if the ping fails, sleep for a short time and try again up to 3 times
+				if err := n.Ping(addr); err != nil {
+					log.Printf("warning: ping %s failed: %v", addr, err)
+					time.Sleep(50 * time.Millisecond)
+					continue
+				}
 			}
 		}(addr)
 	}
@@ -221,4 +246,35 @@ func (n *Node) Get(key []byte) ([]byte, bool, error) {
 	}
 	// unmarshal VALUE message from res.Payload… omitted
 	return nil, false, nil
+}
+
+func (n *Node) PrintRoutingTable() {
+	fmt.Println(n.mgr.RoutingTableString())
+}
+
+func (n *Node) Stats() *network.NetLog {
+	return n.mgr.Stats()
+}
+
+func (n *Node) RefreshBuckets() {
+	for k := range api.KeyBits {
+		if n.mgr.Router().GetBucketSize(k) <= 0 {
+			continue
+		}
+
+		target, err := api.RandomIDInBucket(n.ID, k)
+		if err != nil {
+			continue
+		}
+
+		// do an iterative lookup on that random target
+		closest, err := n.mgr.Lookup(n.ctx, target)
+		if err != nil {
+			continue
+		}
+		// ping everyone we got back so that bucket gets refreshed
+		for _, c := range closest {
+			_ = n.Ping(c.GetUDPAddress())
+		}
+	}
 }

@@ -25,7 +25,7 @@ COPY config ./config
 
 # Expose whatever ports you need
 EXPOSE 6669/udp
-EXPOSE 6669/tcp
+EXPOSE 6668/tcp
 
 # Run the interactive client
 ENTRYPOINT ["./client"]

@@ -33,6 +33,8 @@ func main() {
 }
 
 func NewClient() *Client {
+	initLogs()
+
 	client := &Client{
 		local:    nil,
 		peers:    make([]*node.Node, 0),
@@ -46,14 +48,22 @@ func NewClient() *Client {
 	}
 
 	// register command handlers
+	//
+	// General
 	client.commands["start"] = client.start
 	client.commands["ping"] = client.ping
 	client.commands["spin"] = client.spin
 	client.commands["killp"] = client.killp
 	client.commands["join"] = client.join
+	client.commands["refresh"] = client.refresh
+	client.commands["table"] = client.table
+	client.commands["stats"] = client.netstat
 	client.commands["help"] = client.help
 	client.commands["exit"] = client.shutdown
 	client.commands["quit"] = client.shutdown
+
+	// Logging
+	client.commands["logs"] = client.logsMenu
 
 	fmt.Println("[Node] initialized (not running)")
 	return client

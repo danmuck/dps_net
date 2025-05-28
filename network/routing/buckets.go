@@ -36,8 +36,7 @@ func (b *kBucket) PrintString() string {
 		// 	output += fmt.Sprintf("[ERROR]: %s \n", err)
 		// 	continue
 		// }
-		output += fmt.Sprintf("\t: index %d : prefix %d : %08b \n",
-			api.KBucketIndex(localID, peerID),
+		output += fmt.Sprintf("\t: prefix %03d : %08b \n",
 			api.SharedPrefixLength(localID, peerID),
 			peerID,
 		)

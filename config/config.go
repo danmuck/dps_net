@@ -22,6 +22,7 @@ type Config struct {
 	UDPPort        int               `toml:"udp_port"`
 	BootstrapPeers []string          `toml:"bootstrap_peers"`
 	Timeout        time.Duration     `toml:"timeout"`
+	Refresh        time.Duration     `toml:"refresh"`
 	AppLocks       map[string]string `toml:"app_locks"`
 }
 
@@ -40,6 +41,7 @@ func Load(path string) (*Config, error) {
 		UDPPort:        6669,
 		BootstrapPeers: make([]string, 0),
 		Timeout:        5 * time.Second,
+		Refresh:        30 * time.Second,
 		AppLocks:       make(map[string]string),
 	}
 
