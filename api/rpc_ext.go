@@ -6,6 +6,8 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
+type FILE RPC
+
 // NewContact builds a *api.Contact from its raw fields.
 func NewContact(id []byte, address, tcpPort, udpPort string) *Contact {
 	return &Contact{

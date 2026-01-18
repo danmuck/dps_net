@@ -44,6 +44,21 @@ func (ks *KeyStore) chunkPath(id [KeySize]byte) string {
 	return filepath.Join(ks.storage, fmt.Sprintf("%x%s", id, FileExtension))
 }
 
+func (ks *KeyStore) bootstrapDirs() error {
+	// create directories if they don't exist
+	if err := os.MkdirAll(ks.storage, 0755); err != nil {
+		return fmt.Errorf("failed to create storage directory: %w", err)
+	}
+
+	// load metadata files
+	metadataDir := filepath.Join(ks.storage, "metadata")
+	if err := os.MkdirAll(metadataDir, 0755); err != nil {
+		return fmt.Errorf("failed to create metadata directory: %w", err)
+	}
+	ks.metadata = metadataDir
+	return nil
+}
+
 func NewChunkID(
 	chunkData []byte,
 	fileHash [HashSize]byte,

@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/danmuck/dps_net/api"
+	"github.com/danmuck/dps_net/api/services/router"
 	"github.com/danmuck/dps_net/config"
 	"github.com/danmuck/dps_net/network"
-	"github.com/danmuck/dps_net/network/routing"
-	// "github.com/danmuck/dps_net/network/routing"
+	"github.com/danmuck/dps_net/storage"
 )
 
 // Node is the primary entrypoint to the P2P network.
@@ -23,11 +23,8 @@ type Node struct {
 	Contact *api.Contact
 	cfg     *config.Config
 
-	mgr *network.NetworkManager
-
-	// application storage layers
-	Storage api.StorageInterface
-	Cache   api.StorageInterface
+	nm      *network.NetworkManager
+	storage api.StorageInterface
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -77,13 +74,14 @@ func NewNode(cfgPath string) (*Node, error) {
 
 	// Node context for cancellations
 	nodeCtx, cancel := context.WithCancel(context.Background())
-
+	ks, err := storage.NewLocalStorage(cfg.Storage)
 	n := &Node{
 		ID:      nid,
 		Contact: contact,
 		cfg:     cfg,
-		mgr:     nm,
+		nm:      nm,
 		// storage implementations can be injected or defaulted here
+		storage: ks,
 		// Storage: api.NewBoltStorage(),
 		// Cache:   api.NewMemoryStorage(),
 		ctx:    nodeCtx,
@@ -94,7 +92,7 @@ func NewNode(cfgPath string) (*Node, error) {
 
 // Start launches transports and bootstraps via the manager.
 func (n *Node) Start() error {
-	n.mgr.Start()
+	n.nm.Start()
 	// Bootstrap with configured peers
 	for _, peer := range n.cfg.BootstrapPeers {
 		if err := n.Ping(peer); err != nil {
@@ -120,24 +118,24 @@ func (n *Node) Start() error {
 
 // Stop gracefully shuts down networking
 func (n *Node) Stop() {
-	n.mgr.Shutdown()
+	n.nm.Shutdown()
 	n.cancel()
 }
 
 // Ping sends a Ping RPC to integrate a peer into the routing table
 func (n *Node) Ping(peerAddr string) error {
 	// 1) Build the typed request
-	ping := &routing.PING{
+	ping := &router.PING{
 		From:  n.Contact,
 		Value: nil, // or []byte whatever payload you want
 	}
 
 	// 2) Prepare the typed response holder
-	var ack routing.ACK
+	var ack router.ACK
 
 	// 3) InvokeRemote will marshal pingReq, wrap in api.RPC, send, then
 	//    unmarshal the inner ACK for you
-	if err := n.mgr.InvokeRPC(
+	if err := n.nm.InvokeRPC(
 		n.ctx,
 		peerAddr,
 		"routing.KademliaService", // service name
@@ -173,7 +171,7 @@ func (n *Node) Join(bootstrapUDPAddr string) error {
 		time.Sleep(50 * time.Millisecond)
 	}
 	// 2) Find the k closest nodes to *your* own ID
-	peers, err := n.mgr.Lookup(n.ctx, n.ID)
+	peers, err := n.nm.Lookup(n.ctx, n.ID)
 	if err != nil {
 		return fmt.Errorf("bootstrap Lookup via %s failed: %w", bootstrapUDPAddr, err)
 	}
@@ -209,22 +207,32 @@ func (n *Node) Join(bootstrapUDPAddr string) error {
 
 // Put stores key/value via the DHT
 func (n *Node) Put(key, value []byte) error {
-	// req := &api.RPC{
-	// 	Service: "routing.KademliaService",
-	// 	Method:  "Store",
-	// 	Sender:  n.Contact,
-	// 	Payload: func() []byte {
-	// 		// marshal STORE message… omitted
-	// 		return nil
-	// 	}(),
-	// }
 
+	// find k peers closest to the key
+	peers, err := n.nm.Lookup(n.ctx, api.NodeID(key))
+	if err != nil {
+		return err
+	}
+
+	store := &router.STORE{
+		From:  n.Contact,
+		Key:   key,
+		Value: value,
+	}
 	// needs to find node and invoke the store on each node
-
-	// var res api.RPC
-	// if err := n.mgr.InvokeRemote(n.ctx /*peerAddr*/, "", req, &res); err != nil {
-	// 	return fmt.Errorf("store rpc: %w", err)
-	// }
+	for _, p := range peers {
+		var res *router.ACK
+		if err := n.nm.InvokeRPC(
+			n.ctx,
+			p.GetUDPAddress(),
+			"routing.KademliaService",
+			"Store",
+			store,
+			res,
+		); err != nil {
+			return fmt.Errorf("store rpc: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -241,7 +249,7 @@ func (n *Node) Get(key []byte) ([]byte, bool, error) {
 		}(),
 	}
 	var res api.RPC
-	if err := n.mgr.InvokeRPC(n.ctx /*peerAddr*/, string(n.Contact.GetId()), req.Service, req.Method, req, &res); err != nil {
+	if err := n.nm.InvokeRPC(n.ctx /*peerAddr*/, string(n.Contact.GetId()), req.Service, req.Method, req, &res); err != nil {
 		return nil, false, fmt.Errorf("findvalue rpc: %w", err)
 	}
 	// unmarshal VALUE message from res.Payload… omitted
@@ -249,16 +257,16 @@ func (n *Node) Get(key []byte) ([]byte, bool, error) {
 }
 
 func (n *Node) PrintRoutingTable() {
-	fmt.Println(n.mgr.RoutingTableString())
+	fmt.Println(n.nm.RoutingTableString())
 }
 
 func (n *Node) Stats() *network.NetLog {
-	return n.mgr.Stats()
+	return n.nm.Stats()
 }
 
 func (n *Node) RefreshBuckets() {
 	for k := range api.KeyBits {
-		if n.mgr.Router().GetBucketSize(k) <= 0 {
+		if n.nm.Router().GetBucketSize(k) <= 0 {
 			continue
 		}
 
@@ -268,7 +276,7 @@ func (n *Node) RefreshBuckets() {
 		}
 
 		// do an iterative lookup on that random target
-		closest, err := n.mgr.Lookup(n.ctx, target)
+		closest, err := n.nm.Lookup(n.ctx, target)
 		if err != nil {
 			continue
 		}

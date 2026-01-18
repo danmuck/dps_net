@@ -22,7 +22,7 @@ const RUN_ALL = false
 //	}
 
 var TEST_FILES, err = getFilesInDirectory(DATA_DIRECTORY)
-var FILE = TEST_FILES[0]
+var FILE = TEST_FILES[2]
 
 func getFilesInDirectory(dirPath string) ([]string, error) {
 	dir, err := os.Getwd()
@@ -37,7 +37,7 @@ func getFilesInDirectory(dirPath string) ([]string, error) {
 
 	// Add each file to slice, skipping directories and copy.* files
 	for _, entry := range entries {
-		if !entry.IsDir() && !strings.HasPrefix(entry.Name(), "copy.") {
+		if !entry.IsDir() && !strings.HasPrefix(entry.Name(), "copy.") && !strings.Contains(entry.Name(), ".DS_Store") {
 			files = append(files, entry.Name())
 		}
 	}
@@ -85,7 +85,7 @@ func verifyChunks(ks *key_store.KeyStore, file *key_store.FileReference) error {
 			return fmt.Errorf("chunk reference %d is nil", i)
 		}
 
-		chunkData, err := ks.ReadDataFromDisk(ref.Key)
+		chunkData, err := ks.GetDataFromDisk(ref.Key)
 		if err != nil {
 			return fmt.Errorf("failed to read chunk %d: %w", i, err)
 		}
@@ -154,7 +154,7 @@ func main() {
 	}
 
 	// init new keystore
-	keystore, err := key_store.InitKeyStore(storageDir)
+	keystore, err := key_store.BootstrapKeyStore(storageDir)
 	if err != nil {
 		log.Fatalf("Failed to create keystore: %v", err)
 	}

@@ -8,9 +8,8 @@ import (
 	"time"
 
 	"github.com/danmuck/dps_net/api"
-	"github.com/danmuck/dps_net/network/routing"
+	"github.com/danmuck/dps_net/api/services/router"
 
-	// "github.com/danmuck/dps_net/network/routing"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -88,9 +87,9 @@ func (nm *NetworkManager) InvokeRPC(
 	if service == "routing.KademliaService" {
 		switch method {
 		case "Ping":
-			ack, ok := resp.(*routing.ACK)
+			ack, ok := resp.(*router.ACK)
 			if !ok {
-				return fmt.Errorf("expected *routing.ACK, got %T", resp)
+				return fmt.Errorf("expected *router.ACK, got %T", resp)
 			}
 			nm.lock.Lock()
 			defer nm.lock.Unlock()
@@ -107,9 +106,9 @@ func (nm *NetworkManager) InvokeRPC(
 			// log.Println(nm.Router().RoutingTableString())
 
 		case "FindNode":
-			nodes, ok := resp.(*routing.NODES)
+			nodes, ok := resp.(*router.NODES)
 			if !ok {
-				return fmt.Errorf("expected *routing.NODES, got %T", resp)
+				return fmt.Errorf("expected *router.NODES, got %T", resp)
 			}
 			log.Printf("@%v got %v.Nodes from %v",
 				nm.info.Username, service, nodes.From.Username)
@@ -122,6 +121,14 @@ func (nm *NetworkManager) InvokeRPC(
 				nm.active[peer] = true
 				nm.Router().Update(ctx, peer)
 			}
+		case "Store":
+			ack, ok := resp.(*router.ACK)
+			if !ok {
+				return fmt.Errorf("expected *routing.ACK, got %T", resp)
+			}
+			log.Printf("@%v got %v.Ack from %v",
+				nm.info.Username, service, ack.From.Username)
+
 		}
 	}
 

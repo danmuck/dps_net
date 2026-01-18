@@ -24,6 +24,7 @@ type Config struct {
 	Timeout        time.Duration     `toml:"timeout"`
 	Refresh        time.Duration     `toml:"refresh"`
 	AppLocks       map[string]string `toml:"app_locks"`
+	Storage        string            `toml:"storage"`
 }
 
 // Load reads configuration from a TOML file at path (if non-empty),
@@ -43,6 +44,7 @@ func Load(path string) (*Config, error) {
 		Timeout:        5 * time.Second,
 		Refresh:        30 * time.Second,
 		AppLocks:       make(map[string]string),
+		Storage:        "storage/",
 	}
 
 	// Auto-discover config file

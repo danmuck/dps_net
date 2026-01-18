@@ -27,7 +27,7 @@ func (fr *FileChunk) String() string {
 	var b strings.Builder
 	b.WriteString("FileReference {\n")
 	b.WriteString(fmt.Sprintf("  Key: %x\n", fr.Key))
-	b.WriteString(fmt.Sprintf("  FileName: %s\n", fr.FileName))
+	// b.WriteString(fmt.Sprintf("  FileName: %s\n", fr.FileName))
 	b.WriteString(fmt.Sprintf("  ChunkSize: %d\n", fr.Size))
 	b.WriteString(fmt.Sprintf("  ChunkIndex: %d\n", fr.FileIndex))
 	b.WriteString(fmt.Sprintf("  Location: %s\n", fr.Location))
@@ -43,7 +43,7 @@ func (md *FileMetaData) String() string {
 	b.WriteString("MetaData {\n")
 	b.WriteString(fmt.Sprintf("  FileHash: %x\n", md.FileHash))
 	b.WriteString(fmt.Sprintf("  TotalSize: %d\n", md.TotalSize))
-	b.WriteString(fmt.Sprintf("  FileName: %s\n", md.FileName))
+	// b.WriteString(fmt.Sprintf("  FileName: %s\n", md.FileName))
 	b.WriteString(fmt.Sprintf("  Modified: %s\n", time.Unix(0, md.Modified).Format(time.RFC3339)))
 	// b.WriteString(fmt.Sprintf("  MimeType: %s\n", md.Replication))
 	b.WriteString(fmt.Sprintf("  Permissions: %o\n", md.Permissions))
@@ -68,8 +68,8 @@ func indent(s string) string {
 
 // shortstring methods for more concise output when needed
 func (f *FileReference) ShortString() string {
-	return fmt.Sprintf("File{name: %s, size: %d, chunks: %d}",
-		f.MetaData.FileName, f.MetaData.TotalSize, f.MetaData.TotalChunks)
+	return fmt.Sprintf("File{size: %d, chunks: %d}",
+		f.MetaData.TotalSize, f.MetaData.TotalChunks)
 }
 
 func (fr *FileChunk) ShortString() string {
@@ -78,8 +78,8 @@ func (fr *FileChunk) ShortString() string {
 }
 
 func (md *FileMetaData) ShortString() string {
-	return fmt.Sprintf("MetaData{name: %s, size: %d, chunks: %d}",
-		md.FileName, md.TotalSize, md.TotalChunks)
+	return fmt.Sprintf("MetaData{size: %d, chunks: %d}",
+		md.TotalSize, md.TotalChunks)
 }
 
 // helper function to format byte sizes

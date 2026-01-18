@@ -21,7 +21,6 @@ import (
 type FileMetaData struct {
 	FileHash    [HashSize]byte   `toml:"file_hash"`
 	TotalSize   uint64           `toml:"total_size"`
-	FileName    string           `toml:"file_name"`
 	Modified    int64            `toml:"modified"`
 	Replicate   uint32           `toml:"replicate"`
 	Permissions uint32           `toml:"permissions"`
@@ -44,7 +43,6 @@ type FileReference struct {
 // each file reference maps a chunk of the data to its storage location on disk
 type FileChunk struct {
 	Key       [KeySize]byte `toml:"key"`
-	FileName  string        `toml:"file_name"`
 	Size      uint32        `toml:"chunk_size"`
 	FileIndex uint32        `toml:"chunk_index"`
 	// location can vary in type by protocol?
@@ -55,30 +53,28 @@ type FileChunk struct {
 	DataHash [HashSize]byte `toml:"data_hash"`
 }
 
-func NewFileChunk(data []byte, protocol string) *FileChunk {
-	// calculate chunk's dht routing id
+func NewFileChunk(data []byte, protocol string, location string) *FileChunk {
+	// 	calculate chunk's dht routing id
 	// 	using fileHash | FileIndex allows for reference level modifications
 	// 	see updatekey()
 	// 	for data integrity, likely want to use sha1.sum(chunk_data)
-	// chunk.Key = NewChunkID(nil, metadata.FileHash, uint64(i))
 
 	// default to content based addressing
 	key := sha1.Sum(data)
 	f := &FileChunk{
 		Key:       key,
-		FileName:  "",
-		Location:  "",
+		Location:  location,
 		Size:      uint32(len(data)),
 		FileIndex: 0,
 		Protocol:  protocol,
 		DataHash:  sha256.Sum256(data),
 	}
+
 	return f
 }
 
 func (fc *FileChunk) updateKey(
 	fileHash [HashSize]byte,
-	fileName string,
 	fileIndex uint32,
 ) {
 	// deterministic: SHA-1 of (fileHash || chunkIndex)
@@ -86,7 +82,6 @@ func (fc *FileChunk) updateKey(
 	copy(buf, fileHash[:])
 	binary.LittleEndian.PutUint64(buf[len(fileHash):], uint64(fileIndex))
 	fc.Key = sha1.Sum(buf)
-	fc.FileName = fileName
 	fc.FileIndex = fileIndex
 }
 

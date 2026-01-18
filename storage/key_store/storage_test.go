@@ -25,7 +25,7 @@ func TestLargeFileChunking(t *testing.T) {
 	}
 
 	// create keystore
-	keystore, err := InitKeyStore(storageDir)
+	keystore, err := BootstrapKeyStore(storageDir)
 	if err != nil {
 		t.Fatalf("Failed to create keystore: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestLargeFileChunking(t *testing.T) {
 				t.Fatalf("Chunk reference %d is nil", i)
 			}
 
-			chunkData, err := keystore.ReadDataFromDisk(ref.Key)
+			chunkData, err := keystore.GetDataFromDisk(ref.Key)
 			if err != nil {
 				t.Fatalf("Failed to read chunk %d: %v", i, err)
 			}
@@ -152,7 +152,7 @@ func TestSmallFileChunking(t *testing.T) {
 			}
 
 			// create keystore
-			keystore, err := InitKeyStore(storageDir)
+			keystore, err := BootstrapKeyStore(storageDir)
 			if err != nil {
 				t.Fatalf("Failed to create keystore: %v", err)
 			}
@@ -193,7 +193,7 @@ func TestKeyStorePersistence(t *testing.T) {
 	storageDir := filepath.Join(tempDir, "storage")
 
 	// create initial keystore and store a file
-	ks1, err := InitKeyStore(storageDir)
+	ks1, err := BootstrapKeyStore(storageDir)
 	if err != nil {
 		t.Fatalf("Failed to create initial keystore: %v", err)
 	}
@@ -224,7 +224,7 @@ func TestKeyStorePersistence(t *testing.T) {
 	}
 
 	// create new keystore instance from same directory
-	ks2, err := InitKeyStore(storageDir)
+	ks2, err := BootstrapKeyStore(storageDir)
 	if err != nil {
 		t.Fatalf("Failed to load keystore: %v", err)
 	}

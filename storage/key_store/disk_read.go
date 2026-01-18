@@ -1,147 +1,55 @@
 package key_store
 
 import (
-	"crypto/sha1"
+	// "crypto/sha1"
 	"crypto/sha256"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"time"
-)
 
-// the top level reference to a file in memory
-// includes the metadata for reconstructing the file
-// as well all file references
-type FileReference struct {
-	MetaData MetaData     `toml:"metadata"`
-	Chunks   []*FileChunk `toml:"references,omitempty"`
-}
-
-const (
-	R_USER = 0400 // read permission for owner
-	W_USER = 0200 // write permission for owner
-	X_USER = 0100 // execute permission for owner
-
-	R_GROUP = 0040 // read permission for group
-	W_GROUP = 0020 // write permission for group
-	X_GROUP = 0010 // execute permission for group
-
-	R_OTHER = 0004 // read permission for others
-	W_OTHER = 0002 // write permission for others
-	X_OTHER = 0001 // execute permission for others
+	"github.com/BurntSushi/toml"
 )
 
 // ////
-// store a complete file to disk and return its top level reference in memory
-// TODO: needs to mirror that loads into the network
+// load the data associated with a file chunk from disk
+// returns the payload as raw bytes
 // //
-// //
-// //
-// func (ks *KeyStore) WriteFileToNetwork(name string, fileData []byte, permissions int) (*FileReference, error)
-func (ks *KeyStore) WriteFileDataToDisk(name string, fileData []byte, permissions int) (*FileReference, error) {
-	// prepare metadata
-	metadata, err := prepareMetaData(name, fileData, permissions)
+func (ks *KeyStore) GetDataFromDisk(key [KeySize]byte) ([]byte, error) {
+	ks.lock.RLock()
+	chunk, exists := ks.registry[key]
+	ks.lock.RUnlock()
+
+	if !exists {
+		return nil, fmt.Errorf("chunk not found for key %x", key)
+	}
+
+	data, err := os.ReadFile(chunk.Location)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read chunk file: %w", err)
 	}
 
-	// calculate and store file hash
-	// this is the complete, constructed file data hash
-	metadata.FileHash = sha256.Sum256(fileData)
-
-	// create file object to store metadata
-	file := &FileReference{
-		MetaData: metadata,
-		Chunks:   make([]*FileChunk, metadata.TotalChunks),
+	// verify data integrity
+	dataHash := sha256.Sum256(data)
+	if dataHash != chunk.DataHash {
+		return nil, fmt.Errorf("chunk data corruption detected:\nstored hash:  %x\ncomputed hash: %x",
+			chunk.DataHash, dataHash)
 	}
 
-	// process file data into chunks
-	var totalBytesProcessed uint64 = 0
-	for i := uint32(0); i < metadata.TotalChunks; i++ {
-		// calculate chunk boundaries
-		startIdx := uint64(i) * uint64(metadata.ChunkSize)
-		endIdx := min(startIdx+uint64(metadata.ChunkSize), metadata.TotalSize)
+	return data, nil
+}
 
-		chunkData := fileData[startIdx:endIdx]
-		chunkSize := uint32(len(chunkData))
+// ////
+// load a complete file's metadata from disk
+// //
+func (ks *KeyStore) ReadFileMetadataFromDisk(key [HashSize]byte) (*FileReference, error) {
+	metadataDir := filepath.Join(ks.storage, "metadata")
+	filepath := filepath.Join(metadataDir, fmt.Sprintf("%x.toml", key))
 
-		// create filereference for this chunk
-		chunk := FileChunk{
-			FileName:  metadata.FileName,
-			Size:      chunkSize,
-			FileIndex: i,
-			Protocol:  "file",
-			// MetaData:  &metadata,
-			DataHash: sha256.Sum256(chunkData),
-		}
-
-		// calculate chunk's dht routing id
-		chunkIDData := append(metadata.FileHash[:], byte(i))
-		chunkID := sha1.Sum(chunkIDData)
-		chunk.Key = chunkID
-
-		// store the chunk
-		if err := ks.WriteReferenceToDisk(&chunk, chunkData); err != nil {
-			// cleanup any chunks we've already stored
-			for j := uint32(0); j < i; j++ {
-				if file.Chunks[j] != nil {
-					ks.deleteFileReferenceFromDisk(file.Chunks[j].Key)
-				}
-			}
-			return nil, fmt.Errorf("failed to store chunk %d: %w", i, err)
-		}
-
-		// store reference in file
-		chunkRef := chunk // NOTE: not sure why im making this copy here
-		file.Chunks[i] = &chunkRef
-
-		// debug print after storing each chunk reference
-		fmt.Printf("Added chunk reference %d: Key=%x, Size=%d\n", i, chunkRef.Key, chunkRef.Size)
-
-		totalBytesProcessed += uint64(chunkSize)
-
-		// debug output for progress
-		if i%PRINT_CHUNKS == 0 || i == metadata.TotalChunks-1 {
-			fmt.Printf("Stored chunk %d/%d (%.1f%%)\n",
-				i+1, metadata.TotalChunks, float64(i+1)/float64(metadata.TotalChunks)*100)
-		}
-	}
-
-	// verify total bytes processed
-	if totalBytesProcessed != metadata.TotalSize {
-		// cleanup all chunks on size mismatch
-		for _, ref := range file.Chunks {
-			if ref != nil {
-				ks.deleteFileReferenceFromDisk(ref.Key)
-			}
-		}
-		return nil, fmt.Errorf("processed bytes (%d) doesn't match file size (%d)",
-			totalBytesProcessed, metadata.TotalSize)
-	}
-
-	fmt.Printf("\nValidating file before storage:\n")
-	fmt.Printf("File name: %s\n", file.MetaData.FileName)
-	fmt.Printf("Total chunks: %d\n", file.MetaData.TotalChunks)
-	fmt.Printf("References count: %d\n", len(file.Chunks))
-
-	for i, ref := range file.Chunks {
-		if ref == nil {
-			fmt.Printf("Warning: Reference %d is nil\n", i)
-		} else if i%PRINT_CHUNKS == 0 || i == len(file.Chunks)-1 {
-			fmt.Printf("Reference %d: Key=%x, Size=%d\n", i, ref.Key, ref.Size)
-		}
-	}
-	// store the complete file with metadata and references
-	if err := ks.fileToMemory(file); err != nil {
-		// cleanup all chunks on failure
-		for _, ref := range file.Chunks {
-			if ref != nil {
-				ks.deleteFileReferenceFromDisk(ref.Key)
-			}
-		}
-		return nil, fmt.Errorf("failed to store file metadata: %w", err)
+	var file *FileReference
+	if _, err := toml.DecodeFile(filepath, file); err != nil {
+		return nil, fmt.Errorf("failed to decode metadata file: %w", err)
 	}
 
 	return file, nil
@@ -156,7 +64,8 @@ func (ks *KeyStore) WriteFileDataToDisk(name string, fileData []byte, permission
 // //
 func (ks *KeyStore) ReassembleFileFromDisk(key [HashSize]byte) ([]byte, error) {
 	// get the complete file record
-	file, err := ks.FileFromMemory(key)
+	// NOTE: maybe this should load metadata from disk instead of a map lookup
+	file, err := ks.ReferenceFromMemory(key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get file metadata: %w", err)
 	}
@@ -172,7 +81,7 @@ func (ks *KeyStore) ReassembleFileFromDisk(key [HashSize]byte) ([]byte, error) {
 		}
 
 		// read chunk from disk
-		chunkData, err := ks.ReadDataFromDisk(ref.Key)
+		chunkData, err := ks.GetDataFromDisk(ref.Key)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read chunk %d: %w", i, err)
 		}
@@ -224,7 +133,7 @@ func (ks *KeyStore) ReassembleFileFromDisk(key [HashSize]byte) ([]byte, error) {
 // //
 func (ks *KeyStore) CopyFileToPath(key [HashSize]byte, outputPath string) error {
 	// get the complete file record
-	file, err := ks.FileFromMemory(key)
+	file, err := ks.ReferenceFromMemory(key)
 	if err != nil {
 		return fmt.Errorf("failed to get file: %w", err)
 	}
@@ -246,7 +155,7 @@ func (ks *KeyStore) CopyFileToPath(key [HashSize]byte, outputPath string) error 
 		}
 
 		// get chunk data
-		chunkData, err := ks.ReadDataFromDisk(ref.Key)
+		chunkData, err := ks.GetDataFromDisk(ref.Key)
 		if err != nil {
 			return fmt.Errorf("failed to read chunk %d: %w", i, err)
 		}
@@ -347,7 +256,7 @@ func (ks *KeyStore) LoadAndStoreFile(localFilePath string) (*FileReference, erro
 
 	// prepare metadata
 	fileName := filepath.Base(localFilePath)
-	metadata := MetaData{
+	metadata := FileMetaData{
 		FileName:    fileName,
 		TotalSize:   uint64(fileInfo.Size()),
 		Modified:    time.Now().UnixNano(),
@@ -402,28 +311,17 @@ func (ks *KeyStore) LoadAndStoreFile(localFilePath string) (*FileReference, erro
 		chunkData := buffer[:n]
 
 		// create filereference for this chunk
-		chunk := FileChunk{
-			FileName:  metadata.FileName,
-			Size:      uint32(n),
-			FileIndex: i,
-			Protocol:  "file",
-			// MetaData:  &metadata,
-			DataHash: sha256.Sum256(chunkData),
-		}
 
-		// calculate chunk's dht routing id
-		chunkIDData := append(metadata.FileHash[:], make([]byte, 8)...)
-		binary.LittleEndian.PutUint64(chunkIDData[len(metadata.FileHash):], uint64(i))
-		chunkID := sha1.Sum(chunkIDData)
-		chunk.Key = chunkID
+		chunk := NewFileChunk(chunkData, "file")
+		chunk.updateKey(metadata.FileHash, metadata.FileName, i)
 
 		// fmt.Println(chunk.String())
 		// store the chunk
-		if err := ks.WriteReferenceToDisk(&chunk, chunkData); err != nil {
+		if err := ks.WriteChunkToDisk(chunk, chunkData); err != nil {
 			// cleanup on failure
 			for j := uint32(0); j < i; j++ {
 				if file.Chunks[j] != nil {
-					ks.deleteFileReferenceFromDisk(file.Chunks[j].Key)
+					ks.deleteDataFromDisk(file.Chunks[j].Key)
 				}
 			}
 			return nil, fmt.Errorf("failed to store chunk %d: %w", i, err)
@@ -431,7 +329,7 @@ func (ks *KeyStore) LoadAndStoreFile(localFilePath string) (*FileReference, erro
 
 		// store reference in file
 		chunkRef := chunk // make a copy
-		file.Chunks[i] = &chunkRef
+		file.Chunks[i] = chunkRef
 
 		totalBytesRead += uint64(n)
 
@@ -450,7 +348,7 @@ func (ks *KeyStore) LoadAndStoreFile(localFilePath string) (*FileReference, erro
 		// cleanup on failure
 		for _, ref := range file.Chunks {
 			if ref != nil {
-				ks.deleteFileReferenceFromDisk(ref.Key)
+				ks.deleteDataFromDisk(ref.Key)
 			}
 		}
 		return nil, fmt.Errorf("total bytes read (%d) doesn't match file size (%d)",
@@ -471,11 +369,11 @@ func (ks *KeyStore) LoadAndStoreFile(localFilePath string) (*FileReference, erro
 
 	// fmt.Println(file.String())
 	// store the complete file metadata
-	if err := ks.fileToMemory(file); err != nil {
+	if err := ks.updateReference(file); err != nil {
 		// cleanup on failure
 		for _, ref := range file.Chunks {
 			if ref != nil {
-				ks.deleteFileReferenceFromDisk(ref.Key)
+				ks.deleteDataFromDisk(ref.Key)
 			}
 		}
 		return nil, fmt.Errorf("failed to store file: %w", err)

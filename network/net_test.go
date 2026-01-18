@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/danmuck/dps_net/api"
+	"github.com/danmuck/dps_net/api/services/router"
 	"github.com/danmuck/dps_net/config"
 	"github.com/danmuck/dps_net/network/routing"
 
@@ -155,7 +156,7 @@ func TestKademliaService_FindNode(t *testing.T) {
 	}
 
 	// 4) Call the RPC handler
-	req := &routing.FIND_NODE{
+	req := &router.FIND_NODE{
 		From:     local,
 		TargetId: targetID[:],
 	}

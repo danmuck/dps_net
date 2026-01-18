@@ -1,7 +1,7 @@
 syntax = "proto3";
-package routing;
+package router;
 
-option go_package = "github.com/danmuck/dps_net/network/routing";
+option go_package = "github.com/danmuck/dps_net/api/services/router";
 
 import "api/rpc.proto";        // for api.Contact
 
@@ -19,9 +19,9 @@ message VALUE     { api.Contact from = 1; bytes key = 2; bytes value = 3; repeat
 message REFRESH   { api.Contact from = 1; bytes key = 2; }
 
 // ----------------------------------------------------------------
-// Core Kademlia service
+// Core Routing service
 // ----------------------------------------------------------------
-service KademliaService {
+service RoutingService {
   // Ping a node — gets an ACK
   rpc Ping      (PING)       returns (ACK);
   // Store or overwrite a value

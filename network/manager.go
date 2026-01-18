@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/danmuck/dps_net/api"
+	"github.com/danmuck/dps_net/api/services/router"
 	"github.com/danmuck/dps_net/config"
 	"github.com/danmuck/dps_net/network/routing"
 	"github.com/danmuck/dps_net/network/transport"
@@ -150,20 +151,24 @@ func NewNetworkManager(local *api.Contact, cfg config.Config) (*NetworkManager, 
 		copy(app_lock[:], b)
 		nm.appLocks[svc] = app_lock
 	}
-
-	kad := routing.KademliaService_ServiceDesc
-	kadDesc := &grpc.ServiceDesc{
-		ServiceName: kad.ServiceName,
-		HandlerType: kad.HandlerType,
-		Methods:     kad.Methods,
-		Streams:     kad.Streams,
-		Metadata:    api.AppLockToSlice(nm.appLocks[kad.ServiceName]),
-	}
-	err := nm.RegisterService(kadDesc, nm.Router())
+	router := nm.addAppLock(router.RoutingService_ServiceDesc)
+	// kad := routing.KademliaService_ServiceDesc
+	// kadDesc := &grpc.ServiceDesc{
+	// 	ServiceName: kad.ServiceName,
+	// 	HandlerType: kad.HandlerType,
+	// 	Methods:     kad.Methods,
+	// 	Streams:     kad.Streams,
+	// 	Metadata:    api.AppLockToSlice(nm.appLocks[kad.ServiceName]),
+	// }
+	err := nm.RegisterService(router, nm.Router())
 	if err != nil {
 		return nil, err
 	}
-
+	// store, err := storage.NewLocalStorage(cfg.Storage)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// nm.RegisterService(svcDesc *grpc.ServiceDesc, nm.st)
 	// nm.tcpServ = grpc.NewServer()
 	// services.RegisterKademliaServiceServer(m.grpcServer, rt)
 
@@ -186,6 +191,17 @@ func NewNetworkManager(local *api.Contact, cfg config.Config) (*NetworkManager, 
 	}
 
 	return nm, nil
+}
+
+func (nm *NetworkManager) addAppLock(service grpc.ServiceDesc) *grpc.ServiceDesc {
+	new := &grpc.ServiceDesc{
+		ServiceName: service.ServiceName,
+		HandlerType: service.HandlerType,
+		Methods:     service.Methods,
+		Streams:     service.Streams,
+		Metadata:    api.AppLockToSlice(nm.appLocks[service.ServiceName]),
+	}
+	return new
 }
 
 func (nm *NetworkManager) Start() error {
@@ -221,7 +237,6 @@ func (nm *NetworkManager) Shutdown() {
 	if nm.receiver != nil {
 		close(nm.receiver)
 	}
-	return
 }
 
 // ////
@@ -238,7 +253,7 @@ func (nm *NetworkManager) RegisterService(svcDesc *grpc.ServiceDesc, service any
 		return fmt.Errorf("service %q missing hash metadata: %v", svcDesc.ServiceName, appLock)
 	}
 	expected, ok := nm.appLocks[svcDesc.ServiceName]
-	if !ok || bytes.Compare(appLock, expected[:]) != 0 {
+	if !ok || !bytes.Equal(appLock, expected[:]) {
 		nm.log.error()
 		return fmt.Errorf("no trusted hash for service %q", svcDesc.ServiceName)
 	}
@@ -353,7 +368,7 @@ func (nm *NetworkManager) serve() {
 // using only the peers already in your routing table.  It returns
 // up to k closest Contacts to targetID.
 func (nm *NetworkManager) Lookup(ctx context.Context, target api.NodeID) ([]*api.Contact, error) {
-	svcName := routing.KademliaService_ServiceDesc.ServiceName
+	svcName := router.RoutingService_ServiceDesc.ServiceName
 
 	// 1) seed shortlist from local routing table
 	shortlist, err := nm.Router().ClosestK(ctx, target)
@@ -413,12 +428,12 @@ func (nm *NetworkManager) Lookup(ctx context.Context, target api.NodeID) ([]*api
 			wg.Add(1)
 			go func(c *api.Contact) {
 				defer wg.Done()
-				var resp routing.NODES
+				var resp router.NODES
 				err := nm.InvokeRPC(
 					ctx,
 					c.GetUDPAddress(),
 					svcName, "FindNode",
-					&routing.FIND_NODE{
+					&router.FIND_NODE{
 						From:     nm.info,
 						TargetId: target[:],
 					},

@@ -2,28 +2,28 @@
 
 A simple peer-to-peer (P2P) networking framework using Kademlia-style routing.
 
-> **Note:** This is *not* yet a full DHT; it currently provides peer discovery and messaging. DHT storage/persistence will be added in a future release.
+> **Note:** This is _not_ yet a full DHT; it currently provides peer discovery and messaging. DHT storage/persistence will be added in a future release.
 
 ## Features
 
-* **Peer discovery** via Kademlia *FindNode* and *Ping* RPCs
-* Simple CLI client (`cmd/test_client`) to start, ping, join, and spin peers
-* Docker support for running the client and isolated peer containers
+- **Peer discovery** via Kademlia _FindNode_ and _Ping_ RPCs
+- Simple CLI client (`cmd/test_client`) to start, ping, join, and spin peers
+- Docker support for running the client and isolated peer containers
 
 ## Requirements
 
-* Go 1.24+
-* macOS/Linux
-* Docker & Docker Compose (if running in container)
+- Go 1.24+
+- macOS/Linux
+- Docker & Docker Compose (if running in container)
 
 ## Configuration
 
 The node reads environment variables or a TOML file (`config/peer.toml`) for:
 
-* `NODE_ID`: 160-bit (40 hex‐character) Kademlia node ID
-* `UDP_PORT`: UDP port for RPCs
-* `TCP_PORT`: (future) TCP port
-* `NODE_USER`: human‐readable username
+- `NODE_ID`: 160-bit (40 hex‐character) Kademlia node ID
+- `UDP_PORT`: UDP port for RPCs
+- `TCP_PORT`: (future) TCP port
+- `NODE_USER`: human‐readable username
 
 Example configs can be found in `config/`
 
@@ -33,7 +33,7 @@ Example configs can be found in `config/`
 
 ```bash
 
-go build -o bin/client cmd/test\_client/\*.go
+go build -o bin/client cmd/test_client
 
 ```
 
@@ -61,7 +61,7 @@ export NODE\_USER=client
 
 4. At the `> ` prompt, use commands:
    - `start` — start networking (UDP server)
-   - `spin`  — launch an in-process dummy peer
+   - `spin` — launch an in-process dummy peer
    - `join localhost:6670` — bootstrap onto the network
    - `ping localhost:6670` — test connectivity
 
@@ -73,7 +73,7 @@ export NODE\_USER=client
 
 docker-compose build client
 
-````
+```
 
 2. **Run the client**:
 
@@ -104,15 +104,15 @@ docker run -d --name peer2 \
   -e UDP_PORT=6672 \
   -e NODE_USER=peer2 \
   client
-````
+```
 
 Inside your client prompt, `join <HOST_IP>:6670` will bootstrap new peers.
 
 ## Future Work
 
-* **DHT storage**: key/value persistence and retrieval
-* **TCP transport**: optional reliable messaging
-* **Security layers**: authentication & encryption
+- **DHT storage**: key/value persistence and retrieval
+- **TCP transport**: optional reliable messaging
+- **Security layers**: authentication & encryption
 
 ---
 

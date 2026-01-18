@@ -80,7 +80,7 @@ type RoutingTableInterface interface {
 
 type StorageInterface interface {
 	// Save persists the value under key.
-	Save(ctx context.Context, key NodeID, value []byte) error
+	SaveKey(ctx context.Context, key NodeID, value []byte) error
 	// Find retrieves the value; found==false if missing.
-	Find(ctx context.Context, key NodeID) (value []byte, found bool, err error)
+	FindKey(ctx context.Context, key NodeID) (value []byte, found bool, err error)
 }

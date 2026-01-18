@@ -65,7 +65,10 @@ fn main() {
 
     // Generate the random file
     match generate_random_file(filename, usize::try_from(write_size).unwrap()) {
-        Ok(_) => println!("Successfully created {} with {} bytes.", filename, size),
+        Ok(_) => println!(
+            "Successfully created {} with {} bytes.",
+            filename, write_size
+        ),
         Err(e) => eprintln!("Error: {}", e),
     }
 }
